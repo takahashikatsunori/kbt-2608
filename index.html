@@ -182,6 +182,25 @@
       justify-content: space-between;
     }
 
+    .recenter-btn {
+      display: none;
+      margin-top: 8px;
+      width: 100%;
+      padding: 7px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+      transition: all 0.2s;
+    }
+    .recenter-btn:hover {
+      background: #1d4ed8;
+    }
+
     .btn-group {
       display: flex;
       gap: 8px;
@@ -304,6 +323,9 @@
         <span id="hudNextDistance">次の分岐まで 0m</span>
         <span id="hudTotalRemaining">残り 0.0 km</span>
       </div>
+      <button class="recenter-btn" id="btnRecenter" onclick="recenterCamera()">
+        🎯 自車位置にフォーカスを戻す
+      </button>
     </div>
 
     <!-- アクションボタン群 -->
@@ -378,13 +400,14 @@
     });
     map.addControl(geolocate, 'top-right');
 
-    // 現在地ボタンが押された時の連動処理
+    // 現在地ボタンが押された時の連動処理 (カメラフィットは行わずスタート位置を同期)
     geolocate.on('geolocate', (e) => {
       const userLng = e.coords.longitude;
       const userLat = e.coords.latitude;
-      startCoords = [userLng, userLat];
-      createStartMarker(startCoords);
-      if (destCoords) calculateRoute();
+      if (!isNavigating) {
+        startCoords = [userLng, userLat];
+        createStartMarker(startCoords);
+      }
     });
 
     // ルートパネル表示/非表示トグルボタン (現在地ボタンの下に追加)
@@ -503,6 +526,7 @@
     let soundEnabled = true;
     let demoAnimationId = null;
     let watchPosId = null;
+    let userPannedMap = false;
 
     let destMarker = null;
     let startMarker = null;
@@ -511,6 +535,24 @@
     let currentStepIndex = 0;
     let announcedSteps = new Set();
     let clickTimeout = null;
+
+    // 案内中にユーザーが手動で地図をドラッグした場合、自動カメラ移動を一時停止
+    map.on('dragstart', () => {
+      if (isNavigating) {
+        userPannedMap = true;
+        document.getElementById('btnRecenter').style.display = 'block';
+      }
+    });
+
+    // 自車位置にカメラを再ロック
+    function recenterCamera() {
+      userPannedMap = false;
+      document.getElementById('btnRecenter').style.display = 'none';
+      if (userNavMarker) {
+        const pos = userNavMarker.getLngLat();
+        map.flyTo({ center: [pos.lng, pos.lat], zoom: 17, pitch: is3DMode ? 55 : 0 });
+      }
+    }
 
     // マップ読み込み完了後にGeoJSONソース・レイヤー追加
     map.on('load', () => {
@@ -579,7 +621,6 @@
       
       const panel = document.getElementById('routingPanel');
       if (panel && panel.classList.contains('hidden')) {
-        // パネル非表示時は目的地をセットせず自由なダブルタップ＆ドラッグ操作を許可
         return;
       }
 
@@ -609,7 +650,7 @@
             createStartMarker(startCoords);
             map.flyTo({ center: startCoords, zoom: 16 });
             document.getElementById('infoText').innerText = '📍 出発地を現在地に設定しました。';
-            if (destCoords) calculateRoute();
+            if (destCoords) calculateRoute(true);
           },
           () => {
             alert('現在地の取得に失敗しました。位置情報のアクセスを許可してください。');
@@ -635,7 +676,7 @@
         destMarker.on('dragend', () => {
           const lngLat = destMarker.getLngLat();
           destCoords = [lngLat.lng, lngLat.lat];
-          calculateRoute();
+          calculateRoute(false); // ドラック時はカメラ範囲変更なし
         });
       } else {
         destMarker.setLngLat(destCoords);
@@ -643,7 +684,7 @@
 
       // 地図クリックで目的地が指定されたら自動的にパネルを開く
       toggleRoutingPanel(true);
-      calculateRoute();
+      calculateRoute(true); // 初回目的地指定時のみカメラフィット
     }
 
     // スタートマーカー生成
@@ -661,12 +702,12 @@
       startMarker.on('dragend', () => {
         const lngLat = startMarker.getLngLat();
         startCoords = [lngLat.lng, lngLat.lat];
-        if (destCoords) calculateRoute();
+        if (destCoords) calculateRoute(false);
       });
     }
 
-    // --- OSRM API によるルート計算 ---
-    async function calculateRoute() {
+    // --- OSRM API によるルート計算 (fitCameraがtrueの場合のみ画角フィット) ---
+    async function calculateRoute(fitCamera = true) {
       if (!startCoords || !destCoords) return;
 
       document.getElementById('infoText').innerText = '⏳ 最適ルートを計算中...';
@@ -690,12 +731,14 @@
           geometry: currentRouteData.geometry
         });
 
-        // カメラ範囲をルート全体にフィット (3Dモードの場合はピッチを保つ)
-        const coordinates = currentRouteData.geometry.coordinates;
-        const bounds = coordinates.reduce((b, coord) => b.extend(coord), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
-        map.fitBounds(bounds, { padding: 60, maxZoom: 17, pitch: is3DMode ? 55 : 0 });
+        // カメラ範囲フィットは fitCamera === true かつ ナビゲーション中でない場合のみ1回だけ実行
+        if (fitCamera && !isNavigating) {
+          const coordinates = currentRouteData.geometry.coordinates;
+          const bounds = coordinates.reduce((b, coord) => b.extend(coord), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
+          map.fitBounds(bounds, { padding: 60, maxZoom: 17, pitch: is3DMode ? 55 : 0 });
+        }
 
-        // サマリー表示 (徒歩・車の所要時間を同時表示)
+        // サマリー表示
         const distMeters = currentRouteData.distance;
         const distKm = (distMeters / 1000).toFixed(1);
         
@@ -775,9 +818,11 @@
 
       isNavigating = true;
       isDemoMode = demo;
+      userPannedMap = false;
       currentStepIndex = 0;
       announcedSteps.clear();
 
+      document.getElementById('btnRecenter').style.display = 'none';
       document.getElementById('routeSummary').style.display = 'none';
       document.getElementById('btnStartNav').style.display = 'none';
       document.getElementById('btnDemoNav').style.display = 'none';
@@ -842,7 +887,7 @@
       return `${modText}してください ${name}`;
     }
 
-    // デモシミュレーション走行 (3Dモード時は進行方向を画面上向きに自動回転)
+    // デモシミュレーション走行
     function runDemoSimulation() {
       const coords = currentRouteData.geometry.coordinates;
       const steps = currentRouteData.legs[0].steps;
@@ -861,19 +906,21 @@
         const currentPos = coords[coordIndex];
         userNavMarker.setLngLat(currentPos);
 
-        // 3Dモード時は進行方向(bearing)が画面上向きになるようカメラを回転・傾斜
-        if (is3DMode && coordIndex < totalCoords - 1) {
-          const nextPos = coords[coordIndex + 1];
-          const bearing = getBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
-          map.easeTo({
-            center: currentPos,
-            pitch: 55,
-            bearing: bearing,
-            duration: 550,
-            easing: t => t
-          });
-        } else {
-          map.panTo(currentPos, { duration: 400 });
+        // ユーザーが手動で画面移動していない場合のみ自車追尾
+        if (!userPannedMap) {
+          if (is3DMode && coordIndex < totalCoords - 1) {
+            const nextPos = coords[coordIndex + 1];
+            const bearing = getBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
+            map.easeTo({
+              center: currentPos,
+              pitch: 55,
+              bearing: bearing,
+              duration: 550,
+              easing: t => t
+            });
+          } else {
+            map.panTo(currentPos, { duration: 400 });
+          }
         }
 
         // 最寄りのステップ確認＆案内
@@ -886,7 +933,7 @@
       animate();
     }
 
-    // 実リアルタイムGPS位置追尾 (3Dモード時は進行方向に自動回転)
+    // 実リアルタイムGPS位置追尾
     function startRealTimeTracking() {
       if (!('geolocation' in navigator)) return;
       let lastPos = startCoords;
@@ -895,16 +942,18 @@
         const currentPos = [pos.coords.longitude, pos.coords.latitude];
         userNavMarker.setLngLat(currentPos);
 
-        if (is3DMode && getDistanceMeters(lastPos[1], lastPos[0], currentPos[1], currentPos[0]) > 2) {
-          const bearing = getBearing(lastPos[1], lastPos[0], currentPos[1], currentPos[0]);
-          map.easeTo({
-            center: currentPos,
-            pitch: 55,
-            bearing: bearing,
-            duration: 500
-          });
-        } else {
-          map.panTo(currentPos, { duration: 500 });
+        if (!userPannedMap) {
+          if (is3DMode && getDistanceMeters(lastPos[1], lastPos[0], currentPos[1], currentPos[0]) > 2) {
+            const bearing = getBearing(lastPos[1], lastPos[0], currentPos[1], currentPos[0]);
+            map.easeTo({
+              center: currentPos,
+              pitch: 55,
+              bearing: bearing,
+              duration: 500
+            });
+          } else {
+            map.panTo(currentPos, { duration: 500 });
+          }
         }
         lastPos = currentPos;
 
@@ -969,6 +1018,8 @@
     function stopNavigation() {
       isNavigating = false;
       isDemoMode = false;
+      userPannedMap = false;
+      document.getElementById('btnRecenter').style.display = 'none';
       if (demoAnimationId) clearTimeout(demoAnimationId);
       if (watchPosId) navigator.geolocation.clearWatch(watchPosId);
 
