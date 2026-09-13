@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <title>小平市防災タウンマップ2026年8月版</title>
+  <title>小平市防災タウンマップ2026年8月版 - ルート案内機能</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
@@ -13,6 +13,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
     #map {
       width: 100%;
@@ -33,14 +34,272 @@
       display: block;
       border-radius: 6px;
     }
+
+    /* ルート案内コントロールパネル (トグルアニメーション付き) */
+    .routing-panel {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      width: calc(100% - 24px);
+      max-width: 440px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      padding: 14px 16px;
+      box-sizing: border-box;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    .routing-panel.hidden {
+      transform: translate(-50%, 150%);
+      opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .panel-close-btn {
+      background: none;
+      border: none;
+      font-size: 16px;
+      color: #64748b;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .panel-close-btn:hover {
+      background: #e2e8f0;
+    }
+
+    .info-text {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .route-summary {
+      display: none;
+      background: #f0f6ff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid #d0e2ff;
+    }
+    .summary-distance-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .summary-distance {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0055cc;
+    }
+    .summary-duration-box {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      gap: 12px;
+    }
+    .duration-tag {
+      background: #ffffff;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .nav-hud {
+      display: none;
+      background: #1e293b;
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .hud-step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hud-icon {
+      font-size: 28px;
+    }
+    .hud-instruction {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .hud-subinfo {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: #0066ff;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0052cc;
+    }
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #059669;
+    }
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    .sound-toggle-btn {
+      padding: 10px;
+      width: 44px;
+      flex: none;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .beta-badge {
+      background: #0066ff;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .route-toggle-ctrl-btn.active {
+      background-color: #e2e8f0 !important;
+      border-color: #0066ff !important;
+    }
   </style>
 </head>
 <body>
   <div class="title-banner">
     <img src="./img/title.png" alt="小平市防災タウンマップ2026年8月版" />
   </div>
+  
   <div id="map"></div>
+
+  <!-- ルート案内 UI (初期表示は非表示) -->
+  <div class="routing-panel hidden" id="routingPanel">
+    <div class="panel-header">
+      <div class="panel-title">🗺️ ルート案内 <span class="beta-badge">ベータ</span></div>
+      <button class="panel-close-btn" onclick="toggleRoutingPanel(false)" title="パネルを閉じる">✖</button>
+    </div>
+
+    <!-- 案内テキスト -->
+    <div class="info-text" id="infoText">
+      📍 地図上をタップするかピン（🔵/📍）をドラッグして出発地・目的地を設定してください。
+    </div>
+
+    <!-- ルート計算結果サマリー -->
+    <div class="route-summary" id="routeSummary">
+      <div class="summary-distance-row">
+        <span style="font-size: 13px; color: #64748b; font-weight: bold;">総距離</span>
+        <span class="summary-distance" id="summaryDistance">0.0 km</span>
+      </div>
+      <div class="summary-duration-box">
+        <span class="duration-tag" id="summaryWalkDuration">🚶 徒歩: 約 0分</span>
+        <span class="duration-tag" id="summaryDriveDuration">🚗 車: 約 0分</span>
+      </div>
+    </div>
+
+    <!-- 動的ナビゲーション HUD -->
+    <div class="nav-hud" id="navHud">
+      <div class="hud-step-header">
+        <div class="hud-icon" id="hudIcon">⬆️</div>
+        <div>
+          <div class="hud-instruction" id="hudInstruction">直進してください</div>
+        </div>
+      </div>
+      <div class="hud-subinfo">
+        <span id="hudNextDistance">次の分岐まで 0m</span>
+        <span id="hudTotalRemaining">残り 0.0 km</span>
+      </div>
+    </div>
+
+    <!-- アクションボタン群 -->
+    <div class="btn-group">
+      <button class="action-btn btn-primary" id="btnStartNav" style="display:none;" onclick="startNavigation(false)">
+        ▶ 案内開始
+      </button>
+      <button class="action-btn btn-success" id="btnDemoNav" style="display:none;" onclick="startNavigation(true)">
+        🎬 デモ走行
+      </button>
+      <button class="sound-toggle-btn" id="btnSoundToggle" onclick="toggleSound()" title="音声通知 ON/OFF">
+        🔊
+      </button>
+      <button class="action-btn btn-secondary" id="btnClear" onclick="clearRoute()">
+        リセット
+      </button>
+      <button class="action-btn btn-danger" id="btnStopNav" style="display:none;" onclick="stopNavigation()">
+        ⏹ 終了
+      </button>
+    </div>
+  </div>
+
   <script>
+    // --- マップ初期化 ---
     const map = new maplibregl.Map({
       container: 'map',
       minZoom: 13,
@@ -70,28 +329,617 @@
       zoom: 16
     });
 
-    // ズーム・コンパス（方位）コントローラー
+    // ズーム・コンパス コントローラー
     map.addControl(new maplibregl.NavigationControl({
       showCompass: true,
       showZoom: true,
       visualizePitch: true
     }), 'top-right');
 
-    // スケール（縮尺）コントローラー
+    // スケール コントローラー
     map.addControl(new maplibregl.ScaleControl({
       maxWidth: 120,
       unit: 'metric'
     }), 'bottom-left');
 
-    // 現在地表示コントローラー
+    // 現在地表示 コントローラー
     const geolocate = new maplibregl.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true
-      },
+      positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
       showUserLocation: true
     });
     map.addControl(geolocate, 'top-right');
+
+    // ルートパネル表示/非表示トグルボタン (現在地ボタンの下に追加)
+    class RouteToggleControl {
+      onAdd(map) {
+        this._container = document.createElement('div');
+        this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
+        const btn = document.createElement('button');
+        btn.className = 'maplibregl-ctrl-icon route-toggle-ctrl-btn';
+        btn.type = 'button';
+        btn.title = 'ルート計算・案内パネルを表示/非表示';
+        btn.id = 'routeControlBtn';
+        btn.innerHTML = '<span style="font-size:16px;">🗺️</span>';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.onclick = () => toggleRoutingPanel();
+
+        this._container.appendChild(btn);
+        return this._container;
+      }
+      onRemove() {
+        this._container.parentNode.removeChild(this._container);
+      }
+    }
+    map.addControl(new RouteToggleControl(), 'top-right');
+
+    // 2D / 3D 進行方向ビュー切替ボタン (ルート案内の下に追加)
+    class ViewModeToggleControl {
+      onAdd(map) {
+        this._container = document.createElement('div');
+        this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+
+        const btn = document.createElement('button');
+        btn.className = 'maplibregl-ctrl-icon view-mode-ctrl-btn';
+        btn.type = 'button';
+        btn.title = '2D / 3D 進行方向ビュー切り替え';
+        btn.id = 'viewModeControlBtn';
+        btn.innerHTML = '<span style="font-size:12px; font-weight:800; font-family:sans-serif;">3D</span>';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.onclick = () => toggleViewMode();
+
+        this._container.appendChild(btn);
+        return this._container;
+      }
+      onRemove() {
+        this._container.parentNode.removeChild(this._container);
+      }
+    }
+    map.addControl(new ViewModeToggleControl(), 'top-right');
+
+    // --- パネルトグル処理 ---
+    function toggleRoutingPanel(forceState = null) {
+      const panel = document.getElementById('routingPanel');
+      const btn = document.getElementById('routeControlBtn');
+      
+      const shouldHide = forceState !== null ? !forceState : !panel.classList.contains('hidden');
+      
+      if (shouldHide) {
+        panel.classList.add('hidden');
+        if (btn) btn.classList.remove('active');
+      } else {
+        panel.classList.remove('hidden');
+        if (btn) btn.classList.add('active');
+      }
+    }
+
+    // --- 2D / 3D ビュー切替処理 ---
+    let is3DMode = false;
+    function toggleViewMode(forceState = null) {
+      is3DMode = forceState !== null ? forceState : !is3DMode;
+      const btn = document.getElementById('viewModeControlBtn');
+
+      if (is3DMode) {
+        if (btn) {
+          btn.classList.add('active');
+          btn.style.color = '#0066ff';
+        }
+        map.easeTo({
+          pitch: 55,
+          duration: 600
+        });
+      } else {
+        if (btn) {
+          btn.classList.remove('active');
+          btn.style.color = '';
+        }
+        map.easeTo({
+          pitch: 0,
+          bearing: 0,
+          duration: 600
+        });
+      }
+    }
+
+    // 2点間の進行方位角（bearing）を算出 (0〜360度)
+    function getBearing(lat1, lon1, lat2, lon2) {
+      const toRad = deg => deg * Math.PI / 180;
+      const toDeg = rad => rad * 180 / Math.PI;
+      const dLon = toRad(lon2 - lon1);
+      const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+      const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+                Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+      return (toDeg(Math.atan2(y, x)) + 360) % 360;
+    }
+
+    // --- ルート検索 ＆ ナビゲーション状態変数 ---
+    let startCoords = [139.475, 35.726]; // 初期現在地（小平市中心部）
+    let destCoords = null;
+    let currentRouteData = null;
+    let isNavigating = false;
+    let isDemoMode = false;
+    let soundEnabled = true;
+    let demoAnimationId = null;
+    let watchPosId = null;
+
+    let destMarker = null;
+    let startMarker = null;
+    let userNavMarker = null;
+
+    let currentStepIndex = 0;
+    let announcedSteps = new Set();
+
+    // マップ読み込み完了後にGeoJSONソース・レイヤー追加
+    map.on('load', () => {
+      map.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: []
+        }
+      });
+
+      // ルート線（枠線・影）
+      map.addLayer({
+        id: 'route-casing',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#0033aa',
+          'line-width': 9,
+          'line-opacity': 0.5
+        }
+      });
+
+      // ルート線（メイン）
+      map.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#0066ff',
+          'line-width': 5
+        }
+      });
+
+      // スタート位置マーカー初期描画
+      createStartMarker(startCoords);
+    });
+
+    // ユーザーの位置情報取得（geolocation）
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const userLng = pos.coords.longitude;
+          const userLat = pos.coords.latitude;
+          const distFromKodaira = getDistanceMeters(userLat, userLng, 35.726, 139.475);
+          if (distFromKodaira < 30000) {
+            startCoords = [userLng, userLat];
+            createStartMarker(startCoords);
+          }
+        },
+        () => console.log('Geolocation not available, using default coords.')
+      );
+    }
+
+    // 地図クリックで目的地指定
+    map.on('click', (e) => {
+      if (isNavigating) return;
+      setDestination([e.lngLat.lng, e.lngLat.lat]);
+    });
+
+    // 目的地セット
+    function setDestination(coords) {
+      destCoords = coords;
+      if (!destMarker) {
+        const el = document.createElement('div');
+        el.innerHTML = '📍';
+        el.style.fontSize = '34px';
+        el.style.cursor = 'grab';
+        el.title = 'ドラッグして目的地を移動できます';
+        destMarker = new maplibregl.Marker({ element: el, draggable: true })
+          .setLngLat(destCoords)
+          .addTo(map);
+
+        destMarker.on('dragend', () => {
+          const lngLat = destMarker.getLngLat();
+          destCoords = [lngLat.lng, lngLat.lat];
+          calculateRoute();
+        });
+      } else {
+        destMarker.setLngLat(destCoords);
+      }
+
+      // 地図クリックで目的地が指定されたら自動的にパネルを開く
+      toggleRoutingPanel(true);
+      calculateRoute();
+    }
+
+    // スタートマーカー生成
+    function createStartMarker(coords) {
+      if (startMarker) startMarker.remove();
+      const el = document.createElement('div');
+      el.innerHTML = '🔵';
+      el.style.fontSize = '26px';
+      el.style.cursor = 'grab';
+      el.title = 'ドラッグして出発地を移動できます';
+      startMarker = new maplibregl.Marker({ element: el, draggable: true })
+        .setLngLat(coords)
+        .addTo(map);
+
+      startMarker.on('dragend', () => {
+        const lngLat = startMarker.getLngLat();
+        startCoords = [lngLat.lng, lngLat.lat];
+        if (destCoords) calculateRoute();
+      });
+    }
+
+    // --- OSRM API によるルート計算 ---
+    async function calculateRoute() {
+      if (!startCoords || !destCoords) return;
+
+      document.getElementById('infoText').innerText = '⏳ 最適ルートを計算中...';
+      
+      const url = `https://router.project-osrm.org/route/v1/driving/${startCoords[0]},${startCoords[1]};${destCoords[0]},${destCoords[1]}?overview=full&geometries=geojson&steps=true`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+          document.getElementById('infoText').innerText = '⚠️ ルートが見つかりませんでした。別の地点をお試しください。';
+          return;
+        }
+
+        currentRouteData = data.routes[0];
+
+        // 地図上にルートを描画
+        map.getSource('route').setData({
+          type: 'Feature',
+          geometry: currentRouteData.geometry
+        });
+
+        // カメラ範囲をルート全体にフィット
+        const coordinates = currentRouteData.geometry.coordinates;
+        const bounds = coordinates.reduce((b, coord) => b.extend(coord), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
+        map.fitBounds(bounds, { padding: 60, maxZoom: 17 });
+
+        // サマリー表示 (徒歩・車の所要時間を同時表示)
+        const distMeters = currentRouteData.distance;
+        const distKm = (distMeters / 1000).toFixed(1);
+        
+        // 徒歩: 約80m/分 (4.8km/h) で算出
+        const walkMin = Math.max(1, Math.ceil(distMeters / 80));
+        // 車: OSRM duration (秒) から算出
+        const driveMin = Math.max(1, Math.ceil(currentRouteData.duration / 60));
+
+        document.getElementById('summaryDistance').innerText = `${distKm} km`;
+        document.getElementById('summaryWalkDuration').innerText = `🚶 徒歩: 約 ${walkMin}分`;
+        document.getElementById('summaryDriveDuration').innerText = `🚗 車: 約 ${driveMin}分`;
+
+        document.getElementById('infoText').style.display = 'none';
+        document.getElementById('routeSummary').style.display = 'block';
+
+        document.getElementById('btnStartNav').style.display = 'flex';
+        document.getElementById('btnDemoNav').style.display = 'flex';
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('infoText').innerText = '❌ ルート計算エラーが発生しました。';
+      }
+    }
+
+    // --- Web Audio API 効果音（チャイム） ---
+    function playChime() {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtx();
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc1.type = 'sine';
+        osc2.type = 'sine';
+        osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc2.frequency.setValueAtTime(1760, ctx.currentTime + 0.12); // A6
+
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc1.start(ctx.currentTime);
+        osc1.stop(ctx.currentTime + 0.12);
+        osc2.start(ctx.currentTime + 0.12);
+        osc2.stop(ctx.currentTime + 0.5);
+      } catch (e) {
+        console.warn('AudioContext error:', e);
+      }
+    }
+
+    // --- Web Speech API 音声合成 ---
+    function speak(text) {
+      if (!soundEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      playChime();
+      setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ja-JP';
+        u.rate = 1.05;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      }, 250);
+    }
+
+    // 音声トグル
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('btnSoundToggle').innerText = soundEnabled ? '🔊' : '🔇';
+    }
+
+    // --- 動的ナビゲーション機能 ---
+    function startNavigation(demo = false) {
+      if (!currentRouteData) return;
+
+      isNavigating = true;
+      isDemoMode = demo;
+      currentStepIndex = 0;
+      announcedSteps.clear();
+
+      document.getElementById('routeSummary').style.display = 'none';
+      document.getElementById('btnStartNav').style.display = 'none';
+      document.getElementById('btnDemoNav').style.display = 'none';
+
+      document.getElementById('navHud').style.display = 'block';
+      document.getElementById('btnStopNav').style.display = 'flex';
+
+      speak('案内を開始します。お気をつけてお進みください。');
+
+      // ナビゲーション用アイコンマーカー（1.5km以上は車🚗、1.5km未満は人🏃）
+      const isCar = currentRouteData && currentRouteData.distance >= 1500;
+      const navIcon = isCar ? '🚗' : '🏃';
+
+      if (!userNavMarker) {
+        const el = document.createElement('div');
+        el.innerHTML = navIcon;
+        el.style.fontSize = '32px';
+        el.style.transform = 'translate(-50%, -50%)';
+        userNavMarker = new maplibregl.Marker({ element: el })
+          .setLngLat(startCoords)
+          .addTo(map);
+      } else {
+        userNavMarker.getElement().innerHTML = navIcon;
+      }
+
+      if (isDemoMode) {
+        runDemoSimulation();
+      } else {
+        startRealTimeTracking();
+      }
+    }
+
+    // 進行方向アイコン翻訳
+    function getManeuverIcon(type, modifier) {
+      if (type === 'arrive') return '🎯';
+      if (modifier === 'left' || modifier === 'sharp left') return '⬅️';
+      if (modifier === 'slight left') return '↖️';
+      if (modifier === 'right' || modifier === 'sharp right') return '➡️';
+      if (modifier === 'slight right') return '↗️';
+      if (modifier === 'uturn') return '↩️';
+      return '⬆️';
+    }
+
+    // 進行指示テキスト作成
+    function formatInstruction(step) {
+      const type = step.maneuver.type;
+      const modifier = step.maneuver.modifier;
+      const name = step.name ? `（${step.name}）` : '';
+
+      if (type === 'arrive') return '目的地に到着します';
+      if (type === 'depart') return '出発します';
+
+      let modText = '直進';
+      if (modifier === 'left') modText = '左折';
+      if (modifier === 'right') modText = '右折';
+      if (modifier === 'slight left') modText = '斜め左方向';
+      if (modifier === 'slight right') modText = '斜め右方向';
+      if (modifier === 'sharp left') modText = '大きく左折';
+      if (modifier === 'sharp right') modText = '大きく右折';
+      if (modifier === 'uturn') modText = 'Uターン';
+
+      return `${modText}してください ${name}`;
+    }
+
+    // デモシミュレーション走行 (3Dモード時は進行方向を画面上向きに自動回転)
+    function runDemoSimulation() {
+      const coords = currentRouteData.geometry.coordinates;
+      const steps = currentRouteData.legs[0].steps;
+      let coordIndex = 0;
+      const totalCoords = coords.length;
+
+      function animate() {
+        if (!isNavigating || !isDemoMode) return;
+
+        if (coordIndex >= totalCoords) {
+          speak('目的地に到着しました。案内を終了します。');
+          stopNavigation();
+          return;
+        }
+
+        const currentPos = coords[coordIndex];
+        userNavMarker.setLngLat(currentPos);
+
+        // 3Dモード時は進行方向(bearing)が画面上向きになるようカメラを回転・傾斜
+        if (is3DMode && coordIndex < totalCoords - 1) {
+          const nextPos = coords[coordIndex + 1];
+          const bearing = getBearing(currentPos[1], currentPos[0], nextPos[1], nextPos[0]);
+          map.easeTo({
+            center: currentPos,
+            pitch: 55,
+            bearing: bearing,
+            duration: 550,
+            easing: t => t
+          });
+        } else {
+          map.panTo(currentPos, { duration: 400 });
+        }
+
+        // 最寄りのステップ確認＆案内
+        checkStepGuidance(currentPos, steps);
+
+        coordIndex++;
+        demoAnimationId = setTimeout(animate, 600);
+      }
+
+      animate();
+    }
+
+    // 実リアルタイムGPS位置追尾 (3Dモード時は進行方向に自動回転)
+    function startRealTimeTracking() {
+      if (!('geolocation' in navigator)) return;
+      let lastPos = startCoords;
+      watchPosId = navigator.geolocation.watchPosition((pos) => {
+        if (!isNavigating || isDemoMode) return;
+        const currentPos = [pos.coords.longitude, pos.coords.latitude];
+        userNavMarker.setLngLat(currentPos);
+
+        if (is3DMode && getDistanceMeters(lastPos[1], lastPos[0], currentPos[1], currentPos[0]) > 2) {
+          const bearing = getBearing(lastPos[1], lastPos[0], currentPos[1], currentPos[0]);
+          map.easeTo({
+            center: currentPos,
+            pitch: 55,
+            bearing: bearing,
+            duration: 500
+          });
+        } else {
+          map.panTo(currentPos, { duration: 500 });
+        }
+        lastPos = currentPos;
+
+        checkStepGuidance(currentPos, currentRouteData.legs[0].steps);
+      }, (err) => console.error(err), { enableHighAccuracy: true });
+    }
+
+    // ステップごとの動的距離チェック ＆ 音声案内ロジック
+    function checkStepGuidance(currentPos, steps) {
+      if (currentStepIndex >= steps.length) return;
+
+      const currentStep = steps[currentStepIndex];
+      const stepLoc = currentStep.maneuver.location;
+      const distToStep = getDistanceMeters(currentPos[1], currentPos[0], stepLoc[1], stepLoc[0]);
+
+      // HUD更新
+      document.getElementById('hudIcon').innerText = getManeuverIcon(currentStep.maneuver.type, currentStep.maneuver.modifier);
+      document.getElementById('hudInstruction').innerText = formatInstruction(currentStep);
+      document.getElementById('hudNextDistance').innerText = `次の分岐まで ${Math.round(distToStep)}m`;
+
+      // 目的地までの残り総距離を動的に更新 (デモ走行・リアルタイム移動共通)
+      if (destCoords) {
+        const remainingDistMeters = getDistanceMeters(currentPos[1], currentPos[0], destCoords[1], destCoords[0]);
+        const remKm = (remainingDistMeters / 1000).toFixed(1);
+        document.getElementById('hudTotalRemaining').innerText = `残り ${remKm} km`;
+      }
+
+      // 音声案内判定
+      const stepKeyName = `${currentStepIndex}_${currentStep.maneuver.type}_${currentStep.maneuver.modifier}`;
+      if (!announcedSteps.has(stepKeyName)) {
+        if (distToStep <= 80 && distToStep > 20) {
+          const modText = formatInstruction(currentStep);
+          speak(`およそ80メートル先、${modText}`);
+          announcedSteps.add(stepKeyName);
+        }
+      }
+
+      // 次のステップに進む判定
+      if (distToStep <= 20) {
+        if (currentStep.maneuver.type === 'arrive') {
+          speak('目的地周辺に到着しました。案内を終了します。');
+          stopNavigation();
+          return;
+        }
+        currentStepIndex++;
+      }
+    }
+
+    // 2点間の距離計算 (Haversine formula)
+    function getDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // ナビゲーション停止
+    function stopNavigation() {
+      isNavigating = false;
+      isDemoMode = false;
+      if (demoAnimationId) clearTimeout(demoAnimationId);
+      if (watchPosId) navigator.geolocation.clearWatch(watchPosId);
+
+      if (userNavMarker) {
+        userNavMarker.remove();
+        userNavMarker = null;
+      }
+
+      document.getElementById('navHud').style.display = 'none';
+      document.getElementById('btnStopNav').style.display = 'none';
+
+      if (currentRouteData) {
+        document.getElementById('routeSummary').style.display = 'block';
+        document.getElementById('btnStartNav').style.display = 'flex';
+        document.getElementById('btnDemoNav').style.display = 'flex';
+      } else {
+        clearRoute();
+      }
+    }
+
+    // ルートリセット
+    function clearRoute() {
+      stopNavigation();
+      currentRouteData = null;
+      destCoords = null;
+
+      if (destMarker) {
+        destMarker.remove();
+        destMarker = null;
+      }
+
+      if (map.getSource('route')) {
+        map.getSource('route').setData({
+          type: 'FeatureCollection',
+          features: []
+        });
+      }
+
+      document.getElementById('routeSummary').style.display = 'none';
+      document.getElementById('navHud').style.display = 'none';
+      document.getElementById('btnStartNav').style.display = 'none';
+      document.getElementById('btnDemoNav').style.display = 'none';
+      document.getElementById('btnStopNav').style.display = 'none';
+
+      document.getElementById('infoText').style.display = 'block';
+      document.getElementById('infoText').innerText = '📍 地図上をタップするかピン（🔵/📍）をドラッグして出発地・目的地を設定してください。';
+    }
   </script>
 </body>
 </html>
