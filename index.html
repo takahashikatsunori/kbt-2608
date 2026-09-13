@@ -23,7 +23,7 @@
       top: 10px;
       left: 10px;
       z-index: 10;
-      max-width: calc(100% - 20px);
+      max-width: min(500px, calc(100% - 60px));
       pointer-events: none;
       filter: drop-shadow(0px 4px 8px rgba(0, 0, 0, 0.35));
     }
@@ -43,6 +43,8 @@
   <script>
     const map = new maplibregl.Map({
       container: 'map',
+      minZoom: 13,
+      maxZoom: 18,
       style: {
         version: 8,
         sources: {
@@ -51,7 +53,7 @@
             tiles: ['./tiles/{z}/{x}/{y}.png'],
             tileSize: 256,
             minzoom: 13,
-            maxzoom: 19,
+            maxzoom: 18,
             attribution: 'MapData : OpenStreetMap'
           }
         },
@@ -60,8 +62,7 @@
             id: 'custom-tiles-layer',
             type: 'raster',
             source: 'custom-tiles',
-            minzoom: 13,
-            maxzoom: 19
+            minzoom: 13
           }
         ]
       },
@@ -69,8 +70,18 @@
       zoom: 16
     });
 
-    // ズーム・回転コントローラー
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    // ズーム・コンパス（方位）コントローラー
+    map.addControl(new maplibregl.NavigationControl({
+      showCompass: true,
+      showZoom: true,
+      visualizePitch: true
+    }), 'top-right');
+
+    // スケール（縮尺）コントローラー
+    map.addControl(new maplibregl.ScaleControl({
+      maxWidth: 120,
+      unit: 'metric'
+    }), 'bottom-left');
 
     // 現在地表示コントローラー
     const geolocate = new maplibregl.GeolocateControl({
