@@ -96,6 +96,29 @@
       line-height: 1.4;
     }
 
+    /* 出発地リセットボタン */
+    .reset-start-btn {
+      width: 100%;
+      padding: 7px 12px;
+      background: #f1f5f9;
+      color: #0055cc;
+      border: 1px dashed #93c5fd;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+    }
+    .reset-start-btn:hover {
+      background: #e0f2fe;
+      border-color: #3b82f6;
+    }
+
     .route-summary {
       display: none;
       background: #f0f6ff;
@@ -252,6 +275,11 @@
       📍 地図上をタップするかピン（🔵/📍）をドラッグして出発地・目的地を設定してください。
     </div>
 
+    <!-- 出発地リセットボタン -->
+    <button class="reset-start-btn" onclick="resetStartToCurrentLocation()">
+      🎯 出発地を現在地（GPS）に戻す
+    </button>
+
     <!-- ルート計算結果サマリー -->
     <div class="route-summary" id="routeSummary">
       <div class="summary-distance-row">
@@ -349,6 +377,15 @@
       showUserLocation: true
     });
     map.addControl(geolocate, 'top-right');
+
+    // 現在地ボタンが押された時の連動処理
+    geolocate.on('geolocate', (e) => {
+      const userLng = e.coords.longitude;
+      const userLat = e.coords.latitude;
+      startCoords = [userLng, userLat];
+      createStartMarker(startCoords);
+      if (destCoords) calculateRoute();
+    });
 
     // ルートパネル表示/非表示トグルボタン (現在地ボタンの下に追加)
     class RouteToggleControl {
@@ -473,6 +510,7 @@
 
     let currentStepIndex = 0;
     let announcedSteps = new Set();
+    let clickTimeout = null;
 
     // マップ読み込み完了後にGeoJSONソース・レイヤー追加
     map.on('load', () => {
@@ -535,11 +573,51 @@
       );
     }
 
-    // 地図クリックで目的地指定
+    // 地図クリックで目的地指定（パネル非表示時は無効化 / ダブルタップズームの妨げ防止）
     map.on('click', (e) => {
       if (isNavigating) return;
-      setDestination([e.lngLat.lng, e.lngLat.lat]);
+      
+      const panel = document.getElementById('routingPanel');
+      if (panel && panel.classList.contains('hidden')) {
+        // パネル非表示時は目的地をセットせず自由なダブルタップ＆ドラッグ操作を許可
+        return;
+      }
+
+      if (clickTimeout) clearTimeout(clickTimeout);
+      clickTimeout = setTimeout(() => {
+        setDestination([e.lngLat.lng, e.lngLat.lat]);
+      }, 250);
     });
+
+    // ダブルタップ（ダブルクリック）時はタップタイマーをクリアして誤動作防止
+    map.on('dblclick', () => {
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+      }
+    });
+
+    // 出発地を現在地にワンタップで戻す
+    function resetStartToCurrentLocation() {
+      if ('geolocation' in navigator) {
+        document.getElementById('infoText').innerText = '⏳ 現在地を取得中...';
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const userLng = pos.coords.longitude;
+            const userLat = pos.coords.latitude;
+            startCoords = [userLng, userLat];
+            createStartMarker(startCoords);
+            map.flyTo({ center: startCoords, zoom: 16 });
+            document.getElementById('infoText').innerText = '📍 出発地を現在地に設定しました。';
+            if (destCoords) calculateRoute();
+          },
+          () => {
+            alert('現在地の取得に失敗しました。位置情報のアクセスを許可してください。');
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      }
+    }
 
     // 目的地セット
     function setDestination(coords) {
@@ -612,18 +690,16 @@
           geometry: currentRouteData.geometry
         });
 
-        // カメラ範囲をルート全体にフィット
+        // カメラ範囲をルート全体にフィット (3Dモードの場合はピッチを保つ)
         const coordinates = currentRouteData.geometry.coordinates;
         const bounds = coordinates.reduce((b, coord) => b.extend(coord), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
-        map.fitBounds(bounds, { padding: 60, maxZoom: 17 });
+        map.fitBounds(bounds, { padding: 60, maxZoom: 17, pitch: is3DMode ? 55 : 0 });
 
         // サマリー表示 (徒歩・車の所要時間を同時表示)
         const distMeters = currentRouteData.distance;
         const distKm = (distMeters / 1000).toFixed(1);
         
-        // 徒歩: 約80m/分 (4.8km/h) で算出
         const walkMin = Math.max(1, Math.ceil(distMeters / 80));
-        // 車: OSRM duration (秒) から算出
         const driveMin = Math.max(1, Math.ceil(currentRouteData.duration / 60));
 
         document.getElementById('summaryDistance').innerText = `${distKm} km`;
@@ -654,8 +730,8 @@
 
         osc1.type = 'sine';
         osc2.type = 'sine';
-        osc1.frequency.setValueAtTime(880, ctx.currentTime); // A5
-        osc2.frequency.setValueAtTime(1760, ctx.currentTime + 0.12); // A6
+        osc1.frequency.setValueAtTime(880, ctx.currentTime);
+        osc2.frequency.setValueAtTime(1760, ctx.currentTime + 0.12);
 
         gain.gain.setValueAtTime(0.2, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
