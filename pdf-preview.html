@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>地図PDF出力プレビュー (A3・300dpi) - 小平市防災タウンマップ</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #0f172a;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
+      background: #1e293b;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .toolbar h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 600;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn:disabled {
+      background: #64748b;
+      cursor: wait;
+      transform: none;
+    }
+    .btn-secondary {
+      background: #475569;
+    }
+    .btn-secondary:hover {
+      background: #334155;
+    }
+    .toolbar-desc {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* Screen Preview Wrapper */
+    .preview-wrapper {
+      position: absolute;
+      top: 54px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    /* Outer A3 Landscape Page Frame (420mm x 297mm) */
+    .page-frame {
+      position: relative;
+      width: 420mm;
+      height: 297mm;
+      background: white;
+      padding: 5mm; /* 5mm margin on all 4 sides */
+      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+      box-sizing: border-box;
+      flex-shrink: 0;
+      transform-origin: center center;
+    }
+
+    /* Inner Content Container (410mm x 287mm) */
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #e2e8f0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* Hide Top-Right MapLibre Controls */
+    .maplibregl-ctrl-top-right {
+      display: none !important;
+    }
+
+    /* Overlays */
+    /* Top-Left: Title Image (3mm, 3mm, width:10cm) */
+    .overlay-title {
+      position: absolute;
+      top: 3mm;
+      left: 3mm;
+      z-index: 10;
+      width: 10cm;
+      pointer-events: none;
+      filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.35));
+    }
+    .overlay-title img {
+      width: 10cm;
+      height: auto;
+      display: block;
+    }
+
+    /* Top-Right: High-Visibility Compass Needle */
+    .overlay-top-right {
+      position: absolute;
+      top: 8mm;
+      right: 8mm;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .compass-container {
+      width: 64px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      backdrop-filter: blur(4px);
+    }
+    .compass-needle {
+      width: 52px;
+      height: 52px;
+      transition: transform 0.1s linear;
+    }
+
+    /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit */
+    .overlay-bottom-right {
+      position: absolute;
+      bottom: 8mm;
+      right: 8mm;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .legend-image {
+      width: 6cm;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0px 2px 5px rgba(0, 0, 0, 0.3));
+    }
+    .notice-box {
+      width: 6cm;
+      background: #ffffff;
+      border: 1px solid #cccccc;
+      padding: 5px 7px;
+      box-sizing: border-box;
+      font-size: 6pt;
+      line-height: 1.35;
+      color: #111111;
+      border-radius: 2px;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+      white-space: pre-wrap;
+    }
+    .credit-text {
+      font-size: 7.5pt;
+      color: #333333;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 2px 6px;
+      border-radius: 2px;
+      margin-top: 2px;
+    }
+
+    @media print {
+      @page {
+        size: A3 landscape;
+        margin: 0;
+      }
+      body, html {
+        width: 420mm;
+        height: 297mm;
+        background: none;
+        overflow: hidden;
+      }
+      .toolbar {
+        display: none !important;
+      }
+      .preview-wrapper {
+        position: static;
+        padding: 0;
+        width: 420mm;
+        height: 297mm;
+      }
+      .page-frame {
+        width: 420mm;
+        height: 297mm;
+        transform: none !important;
+        box-shadow: none;
+      }
+      .maplibregl-control-container {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <h1>PDF出力プレビュー (A3横・300dpi)</h1>
+      <span class="toolbar-desc">ドラッグで移動、右ドラッグ / Ctrl+ドラッグで回転・傾き調整できます</span>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-secondary" onclick="resetNorth()">北を上にセット</button>
+      <button class="btn btn-secondary" onclick="resetPitch()">傾きリセット</button>
+      <button class="btn" id="pdf-btn" onclick="downloadPDF()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+        </svg>
+        PDFダウンロード (A3・300dpi)
+      </button>
+    </div>
+  </div>
+
+  <div class="preview-wrapper">
+    <div class="page-frame" id="page-frame">
+      <div class="map-container">
+        <div id="map"></div>
+
+        <div class="overlay-title">
+          <img src="./img/title.png" alt="小平市防災タウンマップ2026年8月版" />
+        </div>
+
+        <div class="overlay-top-right">
+          <div class="compass-container" title="コンパス（クリックで北に復帰）" onclick="resetNorth()" style="cursor:pointer;">
+            <svg class="compass-needle" id="compass-needle" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+              <!-- Red North Arrow -->
+              <polygon points="50,22 62,56 50,48 38,56" fill="#dc2626" />
+              <!-- Gray South Arrow -->
+              <polygon points="50,88 62,56 50,48 38,56" fill="#94a3b8" />
+              <!-- Center Hub -->
+              <circle cx="50" cy="56" r="6" fill="#1e293b" />
+              <!-- Large Bold Red N Mark -->
+              <text x="50" y="16" font-size="16" font-weight="900" fill="#dc2626" text-anchor="middle" font-family="Arial, sans-serif">N</text>
+            </svg>
+          </div>
+        </div>
+
+        <div class="overlay-bottom-right">
+          <img class="legend-image" src="./img/legend.png" alt="凡例" />
+          <div class="notice-box">※災害対策用井戸
+　災害時に限り、井戸所有者のご協力により生活用水としての井戸水を近隣の方々へ提供していただけるもの。
+詳しくは小平市のホームページをご確認ください。</div>
+          <div class="credit-text">MapData : OpenStreetMap</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const map = new maplibregl.Map({
+      container: 'map',
+      preserveDrawingBuffer: true,
+      pitchWithRotate: true,
+      dragRotate: true,
+      touchPitch: true,
+      style: {
+        version: 8,
+        sources: {
+          'custom-tiles': {
+            type: 'raster',
+            tiles: ['./tiles/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            minzoom: 13,
+            maxzoom: 19,
+            attribution: 'MapData : OpenStreetMap'
+          }
+        },
+        layers: [
+          {
+            id: 'custom-tiles-layer',
+            type: 'raster',
+            source: 'custom-tiles',
+            minzoom: 13,
+            maxzoom: 19
+          }
+        ]
+      },
+      center: [139.475, 35.726],
+      zoom: 16
+    });
+
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+
+    const needle = document.getElementById('compass-needle');
+    map.on('rotate', updateCompass);
+    map.on('pitch', updateCompass);
+
+    function updateCompass() {
+      const bearing = map.getBearing();
+      needle.style.transform = `rotate(${-bearing}deg)`;
+    }
+
+    function resetNorth() {
+      map.easeTo({ bearing: 0, pitch: 0 });
+    }
+
+    function resetPitch() {
+      map.easeTo({ pitch: 0 });
+    }
+
+    function fitPreviewToWindow() {
+      const wrapper = document.querySelector('.preview-wrapper');
+      const frame = document.getElementById('page-frame');
+      if (!wrapper || !frame) return;
+
+      const padding = 20;
+      const availableWidth = wrapper.clientWidth - padding;
+      const availableHeight = wrapper.clientHeight - padding;
+
+      const frameWidthPx = 420 * 3.779527559;
+      const frameHeightPx = 297 * 3.779527559;
+
+      const scaleX = availableWidth / frameWidthPx;
+      const scaleY = availableHeight / frameHeightPx;
+      const scale = Math.min(scaleX, scaleY);
+
+      frame.style.transform = `scale(${scale})`;
+      map.resize();
+    }
+
+    window.addEventListener('resize', fitPreviewToWindow);
+    map.on('load', fitPreviewToWindow);
+    setTimeout(fitPreviewToWindow, 100);
+
+    // Direct PDF Export Logic (300 DPI)
+    async function downloadPDF() {
+      const btn = document.getElementById('pdf-btn');
+      const frame = document.getElementById('page-frame');
+
+      btn.disabled = true;
+      btn.textContent = '最高画質(300dpi)PDF生成中...';
+
+      const savedTransform = frame.style.transform;
+      frame.style.transform = 'none';
+
+      try {
+        // scale: 3.125 = 300 DPI (96 DPI * 3.125 = 300 DPI)
+        const canvas = await html2canvas(frame, {
+          scale: 3.125,
+          useCORS: true,
+          allowTaint: true,
+          logging: false
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a3'
+        });
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, 420, 297);
+        pdf.save('小平市防災タウンマップ_A3_300dpi.pdf');
+      } catch (err) {
+        console.error(err);
+        alert('PDF生成中にエラーが発生しました: ' + err.message);
+      } finally {
+        frame.style.transform = savedTransform;
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.1 0 1 0-.708.708l3 3z"/>
+          </svg>
+          PDFダウンロード (A3・300dpi)
+        `;
+      }
+    }
+  </script>
+</body>
+</html>
