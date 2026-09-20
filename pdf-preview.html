@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="anonymous" />
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -72,6 +73,11 @@
     }
     .btn-secondary:hover {
       background: #334155;
+    }
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: 4px;
     }
     .toolbar-desc {
       font-size: 12px;
@@ -174,6 +180,38 @@
       transition: transform 0.1s linear;
     }
 
+    /* 2cm x 2cm QR Code (Top-Right of Legend) */
+    .overlay-map-qr {
+      position: absolute;
+      bottom: calc(8mm + 7.8cm); /* Positioned right above the 6cm legend */
+      right: 8mm;
+      z-index: 10;
+      width: 2cm;
+      height: 2cm;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 1.5mm;
+      box-sizing: border-box;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay-map-qr-code {
+      width: 17mm !important;
+      height: 17mm !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay-map-qr-code canvas,
+    .overlay-map-qr-code img {
+      width: 17mm !important;
+      height: 17mm !important;
+      display: block;
+    }
+
     /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit */
     .overlay-bottom-right {
       position: absolute;
@@ -213,6 +251,66 @@
       margin-top: 2px;
     }
 
+    /* Screen Floating QR Panel (Next to Map) */
+    .screen-qr-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      width: 220px;
+      background: rgba(30, 41, 59, 0.95);
+      color: #ffffff;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 1001;
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s ease;
+    }
+    .screen-qr-panel-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    .screen-qr-box {
+      background: #ffffff;
+      padding: 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 130px;
+      height: 130px;
+    }
+    .screen-qr-box canvas, .screen-qr-box img {
+      width: 130px !important;
+      height: 130px !important;
+    }
+    .screen-qr-desc {
+      font-size: 11px;
+      color: #cbd5e1;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .screen-qr-url-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      font-size: 10px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
     @media print {
       @page {
         size: A3 landscape;
@@ -224,7 +322,7 @@
         background: none;
         overflow: hidden;
       }
-      .toolbar {
+      .toolbar, .screen-qr-panel {
         display: none !important;
       }
       .preview-wrapper {
@@ -287,6 +385,11 @@
           </div>
         </div>
 
+        <!-- 2cm x 2cm Map QR Code (Above Legend) -->
+        <div class="overlay-map-qr" id="overlay-map-qr" title="スマホでスキャンしてPDFダウンロード">
+          <div id="map-qr-code" class="overlay-map-qr-code"></div>
+        </div>
+
         <div class="overlay-bottom-right">
           <img id="legend-img" class="legend-image" src="./img/legend.png" alt="凡例" crossorigin="anonymous" />
           <div class="notice-box">※災害対策用井戸
@@ -298,7 +401,27 @@
     </div>
   </div>
 
+  <!-- Screen Floating QR Panel (Next to map) -->
+  <div class="screen-qr-panel" id="screen-qr-panel">
+    <div class="screen-qr-panel-header">
+      <span>📱 スマホ取得・共有QR</span>
+    </div>
+    <div class="screen-qr-box" id="screen-qr-code"></div>
+    <div class="screen-qr-desc">スキャンで現在画角のPDFを即座にダウンロード</div>
+    <input type="text" class="screen-qr-url-input" id="screen-qr-url" readonly />
+    <button class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="copyQRUrl()">URLをコピー</button>
+  </div>
+
   <script>
+    // Read REST parameters if present in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialLat = urlParams.has('lat') ? parseFloat(urlParams.get('lat')) : 35.726;
+    const initialLng = urlParams.has('lng') ? parseFloat(urlParams.get('lng')) : 139.475;
+    const initialZoom = urlParams.has('zoom') ? parseFloat(urlParams.get('zoom')) : 16;
+    const initialBearing = urlParams.has('bearing') ? parseFloat(urlParams.get('bearing')) : 0;
+    const initialPitch = urlParams.has('pitch') ? parseFloat(urlParams.get('pitch')) : 0;
+    const autoDownload = urlParams.get('download') === '1' || urlParams.get('download') === 'true';
+
     const map = new maplibregl.Map({
       container: 'map',
       preserveDrawingBuffer: true,
@@ -327,8 +450,10 @@
           }
         ]
       },
-      center: [139.475, 35.726],
-      zoom: 16
+      center: [initialLng, initialLat],
+      zoom: initialZoom,
+      bearing: initialBearing,
+      pitch: initialPitch
     });
 
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
@@ -341,6 +466,7 @@
       const bearing = map.getBearing();
       needle.style.transform = `rotate(${-bearing}deg)`;
     }
+    updateCompass();
 
     function resetNorth() {
       map.easeTo({ bearing: 0, pitch: 0 });
@@ -373,6 +499,87 @@
     window.addEventListener('resize', fitPreviewToWindow);
     map.on('load', fitPreviewToWindow);
     setTimeout(fitPreviewToWindow, 100);
+
+    // Dynamic REST URL and QR Code Management
+    function getDynamicDownloadUrl() {
+      const center = map.getCenter();
+      const zoom = map.getZoom().toFixed(2);
+      const bearing = map.getBearing().toFixed(1);
+      const pitch = map.getPitch().toFixed(1);
+      const lat = center.lat.toFixed(5);
+      const lng = center.lng.toFixed(5);
+
+      const base = window.location.origin + window.location.pathname;
+      return `${base}?download=1&lat=${lat}&lng=${lng}&zoom=${zoom}&bearing=${bearing}&pitch=${pitch}`;
+    }
+
+    let screenQRCode = null;
+    let mapQRCode = null;
+
+    function initQRCodes() {
+      const screenQREl = document.getElementById('screen-qr-code');
+      const mapQREl = document.getElementById('map-qr-code');
+
+      screenQRCode = new QRCode(screenQREl, {
+        text: getDynamicDownloadUrl(),
+        width: 130,
+        height: 130,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      mapQRCode = new QRCode(mapQREl, {
+        text: getDynamicDownloadUrl(),
+        width: 180,
+        height: 180,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      const urlInput = document.getElementById('screen-qr-url');
+      if (urlInput) urlInput.value = getDynamicDownloadUrl();
+    }
+
+    let qrTimeout = null;
+    function updateQRCodes() {
+      clearTimeout(qrTimeout);
+      qrTimeout = setTimeout(() => {
+        const url = getDynamicDownloadUrl();
+        const urlInput = document.getElementById('screen-qr-url');
+        if (urlInput) urlInput.value = url;
+
+        if (screenQRCode) screenQRCode.makeCode(url);
+        if (mapQRCode) mapQRCode.makeCode(url);
+      }, 250);
+    }
+
+    map.on('moveend', updateQRCodes);
+    map.on('rotateend', updateQRCodes);
+    map.on('pitchend', updateQRCodes);
+
+    function copyQRUrl() {
+      const url = getDynamicDownloadUrl();
+      navigator.clipboard.writeText(url).then(() => {
+        alert('ダウンロードURLをクリップボードにコピーしました！\n\n' + url);
+      }).catch(() => {
+        prompt('以下のURLをコピーしてください:', url);
+      });
+    }
+
+    // Auto-download trigger if download=1 in REST URL
+    if (autoDownload) {
+      map.once('idle', () => {
+        setTimeout(() => {
+          downloadPDF();
+        }, 800);
+      });
+    }
+
+    // Initialize QR codes on map load
+    map.on('load', initQRCodes);
+    setTimeout(initQRCodes, 300);
 
     // High-Resolution 2D Canvas Compositor with +1 Zoom Level Tiles (300 DPI)
     async function downloadPDF() {
@@ -600,6 +807,30 @@
 
         const totalBottomH = legendH + gap + noticeH + gap + creditH;
         const legendY = contentY + contentH - legendPad - totalBottomH;
+
+        // Draw 2cm x 2cm QR Code right above the Legend box (top-right of legend)
+        const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
+        const qrGap = 12;
+        const qrX = legendX + legendW - qrSize; // Right-aligned with legend
+        const qrY = legendY - qrSize - qrGap;
+
+        // Draw QR box background & border
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(qrX, qrY, qrSize, qrSize);
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+        ctx.restore();
+
+        // Draw the QR Code image
+        const mapQRElem = document.querySelector('#map-qr-code canvas') || document.querySelector('#map-qr-code img');
+        if (mapQRElem) {
+          ctx.drawImage(mapQRElem, qrX + 12, qrY + 12, qrSize - 24, qrSize - 24);
+        }
 
         // Draw Legend Image
         if (legendImg && legendImg.complete && legendImg.naturalWidth > 0) {
