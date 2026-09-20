@@ -219,13 +219,31 @@
     /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit + 2cm QR */
     .overlay-bottom-right {
       position: absolute;
-      bottom: 8mm;
-      right: 8mm;
+      bottom: 2mm;
+      right: 3mm;
       z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 4px;
+      gap: 3px;
+    }
+
+    .legend-top-row {
+      width: 6cm;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1.5mm;
+    }
+    .legend-title-badge {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #111111;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2px 3mm;
+      border-radius: 2px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
+      line-height: 1.2;
     }
 
     /* 2cm x 2cm Map QR Code (Directly above Legend) */
@@ -242,7 +260,6 @@
       align-items: center;
       justify-content: center;
       border-radius: 2px;
-      margin-bottom: 2mm;
     }
     .overlay-map-qr-code {
       width: 15mm !important;
@@ -276,22 +293,26 @@
       width: 6cm;
       background: #ffffff;
       border: 1px solid #cccccc;
-      padding: 5px 7px;
+      padding: 4px 6px;
       box-sizing: border-box;
       font-size: 6pt;
-      line-height: 1.35;
+      line-height: 1.3;
       color: #111111;
       border-radius: 2px;
       box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
       white-space: pre-wrap;
     }
-    .credit-text {
+    .credit-box {
+      width: 6cm;
+      box-sizing: border-box;
       font-size: 7.5pt;
+      line-height: 1.3;
       color: #333333;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2.5px 6px;
       border-radius: 2px;
-      margin-top: 2px;
+      margin-top: 1px;
+      text-align: right;
     }
 
     /* Screen Side-by-Side QR Panel (Right Sidebar, NOT overlapping map) */
@@ -467,17 +488,24 @@
           </div>
 
           <div class="overlay-bottom-right">
-            <!-- 2cm x 2cm Map QR Code (Directly above the 6cm legend) -->
-            <div class="overlay-map-qr" id="overlay-map-qr" style="display: none;" title="スマホでスキャンしてPDFダウンロード">
-              <div id="map-qr-code" class="overlay-map-qr-code"></div>
-              <div class="overlay-map-qr-label">PDF取得</div>
+            <div class="legend-top-row">
+              <span class="legend-title-badge">凡例</span>
+              <!-- 2cm x 2cm Map QR Code (Directly above the 6cm legend) -->
+              <div class="overlay-map-qr" id="overlay-map-qr" style="display: none;" title="スマホでスキャンしてPDFダウンロード">
+                <div id="map-qr-code" class="overlay-map-qr-code"></div>
+                <div class="overlay-map-qr-label">PDF取得</div>
+              </div>
             </div>
 
             <img id="legend-img" class="legend-image" src="./img/legend.png" alt="凡例" crossorigin="anonymous" />
             <div class="notice-box">※災害対策用井戸
 　災害時に限り、井戸所有者のご協力により生活用水としての井戸水を近隣の方々へ提供していただけるもの。
 詳しくは小平市のホームページをご確認ください。</div>
-            <div class="credit-text">MapData : OpenStreetMap</div>
+            <div class="credit-box">
+              <div>MapData : OpenStreetMap (2026/08)</div>
+              <div>地図作製 : 高橋克典(こだいらSVCS)</div>
+              <div id="credit-datetime">出力日時 : </div>
+            </div>
           </div>
         </div>
       </div>
@@ -728,8 +756,28 @@
       });
     }
 
-    map.on('load', initQRCodes);
-    setTimeout(initQRCodes, 200);
+    function updateCreditDateTime() {
+      const el = document.getElementById('credit-datetime');
+      if (el) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        el.textContent = `出力日時 : ${y}/${m}/${d} ${hh}:${min}`;
+      }
+    }
+    updateCreditDateTime();
+
+    map.on('load', () => {
+      initQRCodes();
+      updateCreditDateTime();
+    });
+    setTimeout(() => {
+      initQRCodes();
+      updateCreditDateTime();
+    }, 200);
 
     // High-Resolution 2D Canvas Compositor with +1 Zoom Level Tiles (300 DPI)
     async function downloadPDF() {
@@ -931,11 +979,12 @@
           ctx.restore();
         }
 
-        // 6. Draw Legend + Notice Box + Credit (bottom: 8mm, right: 8mm, width: 6cm = 60mm)
+        // 6. Draw Legend + Notice Box + Credit (bottom: 2mm, right: 3mm, width: 6cm = 60mm)
         const legendImg = document.getElementById('legend-img');
         const legendW = Math.round(60 * dpmm); // 709 px (6cm)
-        const legendPad = Math.round(8 * dpmm);
-        const legendX = contentX + contentW - legendPad - legendW;
+        const legendPadRight = Math.round(3 * dpmm); // 3mm from right
+        const legendPadBottom = Math.round(2 * dpmm); // 2mm from bottom (moved down)
+        const legendX = contentX + contentW - legendPadRight - legendW;
 
         const legendH = (legendImg && legendImg.naturalWidth > 0)
           ? legendW * (legendImg.naturalHeight / legendImg.naturalWidth)
@@ -948,15 +997,51 @@
           '詳しくは小平市のホームページをご確認ください。'
         ];
         const noticeFontSize = 21;
-        const noticeLineHeight = 32;
-        const noticePadY = 18;
+        const noticeLineHeight = 30;
+        const noticePadY = 14;
         const noticePadX = 20;
         const noticeH = noticePadY * 2 + noticeLines.length * noticeLineHeight;
-        const creditH = 36;
-        const gap = 8;
 
-        const totalBottomH = legendH + gap + noticeH + gap + creditH;
-        const legendY = contentY + contentH - legendPad - totalBottomH;
+        // Credit formatting (3 lines, maintaining 22px font size)
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const dateStr = `出力日時 : ${yyyy}/${mm}/${dd} ${hh}:${min}`;
+
+        const creditLines = [
+          'MapData : OpenStreetMap (2026/08)',
+          '地図作製 : 高橋克典(こだいらSVCS)',
+          dateStr
+        ];
+        const creditFontSize = 22;
+        const creditLineHeight = 28;
+        const creditPadY = 8;
+        const creditPadX = 14;
+        const creditH = creditPadY * 2 + creditLines.length * creditLineHeight; // 100 px
+        const gap = 6;
+
+        const legendY = contentY + contentH - legendPadBottom - (legendH + gap + noticeH + gap + creditH);
+
+        // Draw "凡例" label (8pt) at top-left of legend image with 3mm left/right padding
+        ctx.save();
+        ctx.font = 'bold 33px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const badgeMetrics = ctx.measureText('凡例');
+        const badgePadX = Math.round(3 * dpmm); // 3mm on left and right
+        const badgePadY = 6;
+        const titleBadgeW = Math.round(badgeMetrics.width + badgePadX * 2);
+        const titleBadgeH = Math.round(8 * (300 / 72) + badgePadY * 2);
+        const titleBadgeY = legendY - titleBadgeH - 4;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillRect(legendX, titleBadgeY, titleBadgeW, titleBadgeH);
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('凡例', legendX + titleBadgeW / 2, titleBadgeY + titleBadgeH / 2);
+        ctx.restore();
 
         // Draw 2cm x 2cm QR Code on map (ONLY if isMapQREnabled is true)
         if (isMapQREnabled) {
@@ -1024,16 +1109,19 @@
         }
         ctx.restore();
 
-        // Draw Credit Text
+        // Draw Credit Box (3 lines)
         const creditY = noticeY + noticeH + gap;
         ctx.save();
-        ctx.font = '22px Arial, sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.fillRect(legendX, creditY, legendW, creditH);
+        ctx.font = `${creditFontSize}px Arial, sans-serif`;
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText('MapData : OpenStreetMap', legendX + legendW - 12, creditY + creditH / 2);
+        for (let i = 0; i < creditLines.length; i++) {
+          const lineY = creditY + creditPadY + i * creditLineHeight + creditLineHeight / 2;
+          ctx.fillText(creditLines[i], legendX + legendW - creditPadX, lineY);
+        }
         ctx.restore();
 
         // Export to jsPDF
@@ -1047,7 +1135,7 @@
         });
 
         pdf.addImage(imgData, 'JPEG', 0, 0, 420, 297);
-        pdf.save('小平市防災タウンマップ_A3_300dpi.pdf');
+        pdf.save('小平市防災タウンマップ.pdf');
       } catch (err) {
         console.error(err);
         alert('PDF生成中にエラーが発生しました: ' + err.message);

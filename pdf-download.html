@@ -268,7 +268,7 @@
         ページを閉じる
       </button>
 
-      <a id="download-link" class="btn btn-primary" href="#" style="display:none;" download="小平市防災タウンマップ_A3_300dpi.pdf">
+      <a id="download-link" class="btn btn-primary" href="#" style="display:none;" download="小平市防災タウンマップ.pdf">
         <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
           <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.1 0 1 0-.708.708l3 3z"/>
@@ -551,10 +551,11 @@
         ctx.fillText(scaleText, scaleX + scaleW / 2, scaleY - 4);
         ctx.restore();
 
-        // 8. Draw Legend + Notice Box + Credit (bottom: 8mm, right: 8mm, width: 6cm = 60mm)
+        // 8. Draw Legend + Notice Box + Credit (bottom: 2mm, right: 3mm, width: 6cm = 60mm)
         const legendW = Math.round(60 * dpmm); // 709 px (6cm)
-        const legendPad = Math.round(8 * dpmm);
-        const legendX = contentX + contentW - legendPad - legendW;
+        const legendPadRight = Math.round(3 * dpmm); // 3mm from right
+        const legendPadBottom = Math.round(2 * dpmm); // 2mm from bottom (moved down)
+        const legendX = contentX + contentW - legendPadRight - legendW;
 
         const legendH = (legendImg && legendImg.naturalWidth > 0)
           ? legendW * (legendImg.naturalHeight / legendImg.naturalWidth)
@@ -567,15 +568,51 @@
           '詳しくは小平市のホームページをご確認ください。'
         ];
         const noticeFontSize = 21;
-        const noticeLineHeight = 32;
-        const noticePadY = 18;
+        const noticeLineHeight = 30;
+        const noticePadY = 14;
         const noticePadX = 20;
         const noticeH = noticePadY * 2 + noticeLines.length * noticeLineHeight;
-        const creditH = 36;
-        const gap = 8;
 
-        const totalBottomH = legendH + gap + noticeH + gap + creditH;
-        const legendY = contentY + contentH - legendPad - totalBottomH;
+        // Credit formatting (3 lines, maintaining 22px font size)
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const dateStr = `出力日時 : ${yyyy}/${mm}/${dd} ${hh}:${min}`;
+
+        const creditLines = [
+          'MapData : OpenStreetMap (2026/08)',
+          '地図作製 : 高橋克典(こだいらSVCS)',
+          dateStr
+        ];
+        const creditFontSize = 22;
+        const creditLineHeight = 28;
+        const creditPadY = 8;
+        const creditPadX = 14;
+        const creditH = creditPadY * 2 + creditLines.length * creditLineHeight; // 100 px
+        const gap = 6;
+
+        const legendY = contentY + contentH - legendPadBottom - (legendH + gap + noticeH + gap + creditH);
+
+        // Draw "凡例" label (8pt) at top-left of legend image with 3mm left/right padding
+        ctx.save();
+        ctx.font = 'bold 33px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const badgeMetrics = ctx.measureText('凡例');
+        const badgePadX = Math.round(3 * dpmm); // 3mm on left and right
+        const badgePadY = 6;
+        const titleBadgeW = Math.round(badgeMetrics.width + badgePadX * 2);
+        const titleBadgeH = Math.round(8 * (300 / 72) + badgePadY * 2);
+        const titleBadgeY = legendY - titleBadgeH - 4;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillRect(legendX, titleBadgeY, titleBadgeW, titleBadgeH);
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('凡例', legendX + titleBadgeW / 2, titleBadgeY + titleBadgeH / 2);
+        ctx.restore();
 
         // Draw 2cm x 2cm QR Code on map if enabled
         if (isMapQREnabled) {
@@ -651,16 +688,19 @@
         }
         ctx.restore();
 
-        // Draw Credit
+        // Draw Credit Box (3 lines)
         const creditY = noticeY + noticeH + gap;
         ctx.save();
-        ctx.font = '22px Arial, sans-serif';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         ctx.fillRect(legendX, creditY, legendW, creditH);
+        ctx.font = `${creditFontSize}px Arial, sans-serif`;
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.fillText('MapData : OpenStreetMap', legendX + legendW - 12, creditY + creditH / 2);
+        for (let i = 0; i < creditLines.length; i++) {
+          const lineY = creditY + creditPadY + i * creditLineHeight + creditLineHeight / 2;
+          ctx.fillText(creditLines[i], legendX + legendW - creditPadX, lineY);
+        }
         ctx.restore();
 
         // Convert to jsPDF
@@ -685,7 +725,7 @@
         downloadLink.style.display = 'inline-flex';
 
         // Trigger automatic download
-        pdf.save('小平市防災タウンマップ_A3_300dpi.pdf');
+        pdf.save('小平市防災タウンマップ.pdf');
 
         const closeBtn = document.getElementById('close-btn');
         if (closeBtn) closeBtn.disabled = false;
