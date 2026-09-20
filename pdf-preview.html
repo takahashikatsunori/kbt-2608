@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <title>地図PDF出力プレビュー (A3・300dpi) - 小平市防災タウンマップ</title>
+  <title>小平市防災タウンマップダウンロード (A3・300dpi)</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="anonymous" />
@@ -14,8 +14,8 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", Meiryo, sans-serif;
+      background-color: #faf7ee;
       overflow: hidden;
     }
 
@@ -25,19 +25,21 @@
       left: 0;
       right: 0;
       height: 54px;
-      background: #1e293b;
-      color: #ffffff;
+      background: #ffffff;
+      color: #2d3748;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
       z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border-bottom: 1px solid #ede7db;
+      box-shadow: 0 2px 10px rgba(180, 160, 130, 0.12);
     }
     .toolbar h1 {
       font-size: 15px;
       margin: 0;
-      font-weight: 600;
+      font-weight: 700;
+      color: #2d3748;
     }
     .toolbar-actions {
       display: flex;
@@ -49,7 +51,7 @@
       color: white;
       border: none;
       padding: 8px 14px;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
@@ -57,31 +59,39 @@
       align-items: center;
       gap: 6px;
       transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+      font-family: inherit;
     }
     .btn:hover {
       background: #1d4ed8;
       transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
     }
     .btn:disabled {
-      background: #64748b;
+      background: #cbd5e1;
+      color: #94a3b8;
       cursor: wait;
       transform: none;
+      box-shadow: none;
     }
     .btn-secondary {
-      background: #475569;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .btn-secondary:hover {
-      background: #334155;
+      background: #e2e8f0;
+      color: #1e293b;
     }
     .btn-sm {
       padding: 6px 12px;
       font-size: 12px;
-      border-radius: 4px;
+      border-radius: 6px;
     }
     .toolbar-desc {
       font-size: 11px;
-      color: #94a3b8;
+      color: #78716c;
     }
 
     .toggle-label {
@@ -89,18 +99,19 @@
       align-items: center;
       gap: 6px;
       font-size: 12px;
-      font-weight: 500;
-      color: #e2e8f0;
+      font-weight: 600;
+      color: #475569;
       cursor: pointer;
       padding: 6px 10px;
-      background: #334155;
-      border: 1px solid #475569;
-      border-radius: 6px;
+      background: #fbf9f4;
+      border: 1px solid #ede7db;
+      border-radius: 8px;
       user-select: none;
       transition: all 0.2s;
     }
     .toggle-label:hover {
-      background: #3b4d66;
+      background: #f4ede0;
+      border-color: #dfd5c2;
     }
     .toggle-label input[type="checkbox"] {
       cursor: pointer;
@@ -120,6 +131,9 @@
       display: flex;
       flex-direction: row;
       overflow: hidden;
+      background-color: #faf7ee;
+      background-image: radial-gradient(#ede6d6 1.2px, transparent 1.2px), linear-gradient(135deg, #fdfbf7 0%, #f6f1e5 100%);
+      background-size: 24px 24px, 100% 100%;
     }
 
     /* Screen Preview Wrapper */
@@ -142,7 +156,8 @@
       height: 297mm;
       background: white;
       padding: 5mm; /* 5mm margin on all 4 sides */
-      box-shadow: 0 12px 36px rgba(0,0,0,0.5);
+      border: 1px solid #ede7db;
+      box-shadow: 0 16px 40px rgba(180, 160, 130, 0.28), 0 2px 8px rgba(0,0,0,0.06);
       box-sizing: border-box;
       flex-shrink: 0;
       transform-origin: center center;
@@ -319,13 +334,13 @@
     .qr-sidebar {
       width: 240px;
       height: 100%;
-      background: #1e293b;
-      border-left: 1px solid #334155;
+      background: #ffffff;
+      border-left: 1px solid #ede7db;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
       flex-shrink: 0;
-      box-shadow: -4px 0 16px rgba(0,0,0,0.35);
+      box-shadow: -4px 0 20px rgba(180, 160, 130, 0.15);
       z-index: 100;
     }
     .qr-sidebar-header {
@@ -333,10 +348,10 @@
       justify-content: space-between;
       align-items: center;
       padding: 14px 16px;
-      border-bottom: 1px solid #334155;
+      border-bottom: 1px solid #ede7db;
       font-size: 13px;
-      font-weight: 600;
-      color: #38bdf8;
+      font-weight: 700;
+      color: #2563eb;
     }
     .qr-sidebar-close {
       background: transparent;
@@ -349,8 +364,8 @@
       line-height: 1;
     }
     .qr-sidebar-close:hover {
-      color: #ffffff;
-      background: #334155;
+      color: #334155;
+      background: #f1f5f9;
     }
     .qr-sidebar-body {
       padding: 16px;
@@ -362,9 +377,10 @@
       box-sizing: border-box;
     }
     .screen-qr-box {
-      background: #ffffff;
+      background: #fbf9f4;
+      border: 1px solid #ede7db;
       padding: 8px;
-      border-radius: 6px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -372,6 +388,7 @@
       height: 140px;
       box-sizing: border-box;
       overflow: hidden;
+      box-shadow: 0 2px 8px rgba(180, 160, 130, 0.12);
     }
     .screen-qr-box canvas, .screen-qr-box img {
       width: 124px !important;
@@ -380,18 +397,18 @@
     }
     .screen-qr-desc {
       font-size: 11px;
-      color: #cbd5e1;
+      color: #64748b;
       text-align: center;
       line-height: 1.4;
     }
     .screen-qr-url-input {
       width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #94a3b8;
+      background: #fbf9f4;
+      border: 1px solid #ede7db;
+      color: #475569;
       font-size: 10px;
       padding: 6px 8px;
-      border-radius: 4px;
+      border-radius: 6px;
       box-sizing: border-box;
     }
 
@@ -435,7 +452,7 @@
 
   <div class="toolbar">
     <div style="display:flex; align-items:center; gap:12px;">
-      <h1>PDF出力プレビュー (A3横・300dpi)</h1>
+      <h1>小平市防災タウンマップダウンロード</h1>
       <span class="toolbar-desc">ドラッグで移動、右ドラッグ / Ctrl+ドラッグで回転・傾き調整</span>
     </div>
     <div class="toolbar-actions">
@@ -453,13 +470,13 @@
 
       <button class="btn btn-secondary" onclick="resetNorth()">北を上に</button>
       <button class="btn btn-secondary" onclick="resetPitch()">傾きリセット</button>
-      <button class="btn btn-secondary" onclick="window.print()" title="予備のブラウザ印刷機能">ブラウザ印刷</button>
+      <button class="btn btn-secondary" onclick="window.print()" title="予備のブラウザ印刷機能">印刷</button>
       <button class="btn" id="pdf-btn" onclick="downloadPDF()">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
           <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.1 0 1 0-.708.708l3 3z"/>
         </svg>
-        PDFダウンロード (A3・300dpi)
+        PDFダウンロード
       </button>
     </div>
   </div>
@@ -1152,7 +1169,7 @@
             <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
             <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.1 0 1 0-.708.708l3 3z"/>
           </svg>
-          PDFダウンロード (A3・300dpi)
+          PDFダウンロード
         `;
       }
     }
