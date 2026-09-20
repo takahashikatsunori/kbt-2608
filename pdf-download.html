@@ -435,7 +435,8 @@
         ctx.fillRect(0, 0, canvasW, canvasH);
 
         // 2. 5mm Margins and Inner Content Dimensions
-        const marginPx = Math.round(5 * dpmm); // 59 px
+        const margin = Math.round(5 * dpmm); // 59 px
+        const marginPx = margin;
         const contentX = marginPx;
         const contentY = marginPx;
         const contentW = canvasW - (marginPx * 2); // 4843 px (410mm)
