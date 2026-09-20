@@ -30,32 +30,32 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 16px;
       z-index: 1000;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     .toolbar h1 {
-      font-size: 16px;
+      font-size: 15px;
       margin: 0;
       font-weight: 600;
     }
     .toolbar-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
     }
     .btn {
       background: #2563eb;
       color: white;
       border: none;
-      padding: 8px 16px;
+      padding: 8px 14px;
       border-radius: 6px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       transition: all 0.2s ease;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
@@ -75,53 +75,64 @@
       background: #334155;
     }
     .btn-sm {
-      padding: 5px 10px;
+      padding: 6px 12px;
       font-size: 12px;
       border-radius: 4px;
     }
     .toolbar-desc {
-      font-size: 12px;
+      font-size: 11px;
       color: #94a3b8;
     }
 
-    .qr-toggle-label {
+    .toggle-label {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
-      font-size: 13px;
+      gap: 6px;
+      font-size: 12px;
       font-weight: 500;
       color: #e2e8f0;
       cursor: pointer;
-      padding: 6px 12px;
+      padding: 6px 10px;
       background: #334155;
       border: 1px solid #475569;
       border-radius: 6px;
       user-select: none;
       transition: all 0.2s;
     }
-    .qr-toggle-label:hover {
+    .toggle-label:hover {
       background: #3b4d66;
     }
-    .qr-toggle-label input[type="checkbox"] {
+    .toggle-label input[type="checkbox"] {
       cursor: pointer;
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       accent-color: #2563eb;
+      margin: 0;
     }
 
-    /* Screen Preview Wrapper */
-    .preview-wrapper {
+    /* Main Flex Container (Side-by-Side) */
+    .main-container {
       position: absolute;
       top: 54px;
       left: 0;
       right: 0;
       bottom: 0;
       display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    /* Screen Preview Wrapper */
+    .preview-wrapper {
+      flex: 1;
+      height: 100%;
+      display: flex;
       justify-content: center;
       align-items: center;
       overflow: hidden;
       padding: 16px;
       box-sizing: border-box;
+      min-width: 0;
     }
 
     /* Outer A3 Landscape Page Frame (420mm x 297mm) */
@@ -283,34 +294,51 @@
       margin-top: 2px;
     }
 
-    /* Screen Floating QR Panel (Next to Map) */
-    .screen-qr-panel {
-      position: fixed;
-      right: 20px;
-      bottom: 20px;
-      width: 210px;
-      background: rgba(30, 41, 59, 0.96);
-      color: #ffffff;
-      border: 1px solid #475569;
-      border-radius: 8px;
-      padding: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-      z-index: 1001;
-      backdrop-filter: blur(8px);
+    /* Screen Side-by-Side QR Panel (Right Sidebar, NOT overlapping map) */
+    .qr-sidebar {
+      width: 240px;
+      height: 100%;
+      background: #1e293b;
+      border-left: 1px solid #334155;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 10px;
       box-sizing: border-box;
+      flex-shrink: 0;
+      box-shadow: -4px 0 16px rgba(0,0,0,0.35);
+      z-index: 100;
     }
-    .screen-qr-panel-header {
-      width: 100%;
+    .qr-sidebar-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid #334155;
       font-size: 13px;
       font-weight: 600;
       color: #38bdf8;
+    }
+    .qr-sidebar-close {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .qr-sidebar-close:hover {
+      color: #ffffff;
+      background: #334155;
+    }
+    .qr-sidebar-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
     .screen-qr-box {
       background: #ffffff;
@@ -333,7 +361,7 @@
       font-size: 11px;
       color: #cbd5e1;
       text-align: center;
-      line-height: 1.35;
+      line-height: 1.4;
     }
     .screen-qr-url-input {
       width: 100%;
@@ -341,7 +369,7 @@
       border: 1px solid #334155;
       color: #94a3b8;
       font-size: 10px;
-      padding: 5px 6px;
+      padding: 6px 8px;
       border-radius: 4px;
       box-sizing: border-box;
     }
@@ -357,8 +385,12 @@
         background: none;
         overflow: hidden;
       }
-      .toolbar, .screen-qr-panel {
+      .toolbar, .qr-sidebar {
         display: none !important;
+      }
+      .main-container {
+        position: static;
+        display: block;
       }
       .preview-wrapper {
         position: static;
@@ -381,18 +413,26 @@
 <body>
 
   <div class="toolbar">
-    <div style="display:flex; align-items:center; gap:14px;">
+    <div style="display:flex; align-items:center; gap:12px;">
       <h1>PDF出力プレビュー (A3横・300dpi)</h1>
-      <span class="toolbar-desc">ドラッグで移動、右ドラッグ / Ctrl+ドラッグで回転・傾き調整できます</span>
+      <span class="toolbar-desc">ドラッグで移動、右ドラッグ / Ctrl+ドラッグで回転・傾き調整</span>
     </div>
     <div class="toolbar-actions">
-      <label class="qr-toggle-label" title="出力するPDFの凡例右上に2cm角のQRコードを印刷します">
+      <!-- Toggle 1: PDF Map QR Print (Default: OFF) -->
+      <label class="toggle-label" title="出力するPDFの凡例右上に2cm角のQRコードを印刷します">
         <input type="checkbox" id="toggle-map-qr" onchange="toggleMapQR(this.checked)" />
         <span>地図にQR印字</span>
       </label>
-      <button class="btn btn-secondary" onclick="resetNorth()">北を上にセット</button>
+
+      <!-- Toggle 2: Screen Side-by-Side QR Panel (Default: OFF) -->
+      <label class="toggle-label" title="画面横にスマホ共有用QRパネルを横並びで表示します（地図と重なりません）">
+        <input type="checkbox" id="toggle-screen-qr" onchange="toggleScreenQR(this.checked)" />
+        <span>共有QRパネル</span>
+      </label>
+
+      <button class="btn btn-secondary" onclick="resetNorth()">北を上に</button>
       <button class="btn btn-secondary" onclick="resetPitch()">傾きリセット</button>
-      <button class="btn btn-secondary" onclick="window.print()" title="予備のブラウザ印刷機能">ブラウザ印刷 (A3)</button>
+      <button class="btn btn-secondary" onclick="window.print()" title="予備のブラウザ印刷機能">ブラウザ印刷</button>
       <button class="btn" id="pdf-btn" onclick="downloadPDF()">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
@@ -403,53 +443,59 @@
     </div>
   </div>
 
-  <div class="preview-wrapper">
-    <div class="page-frame" id="page-frame">
-      <div class="map-container">
-        <div id="map"></div>
+  <div class="main-container">
+    <!-- Map Preview Area -->
+    <div class="preview-wrapper">
+      <div class="page-frame" id="page-frame">
+        <div class="map-container">
+          <div id="map"></div>
 
-        <div class="overlay-title">
-          <img id="title-img" src="./img/title.png" alt="小平市防災タウンマップ2026年8月版" crossorigin="anonymous" />
-        </div>
-
-        <div class="overlay-top-right">
-          <div class="compass-container" title="コンパス（クリックで北に復帰）" onclick="resetNorth()" style="cursor:pointer;">
-            <svg class="compass-needle" id="compass-needle" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" stroke-width="2"/>
-              <polygon points="50,22 62,56 50,48 38,56" fill="#dc2626" />
-              <polygon points="50,88 62,56 50,48 38,56" fill="#94a3b8" />
-              <circle cx="50" cy="56" r="6" fill="#1e293b" />
-              <text x="50" y="16" font-size="16" font-weight="900" fill="#dc2626" text-anchor="middle" font-family="Arial, sans-serif">N</text>
-            </svg>
-          </div>
-        </div>
-
-        <div class="overlay-bottom-right">
-          <!-- 2cm x 2cm Map QR Code (Directly above the 6cm legend) -->
-          <div class="overlay-map-qr" id="overlay-map-qr" style="display: none;" title="スマホでスキャンしてPDFダウンロード">
-            <div id="map-qr-code" class="overlay-map-qr-code"></div>
-            <div class="overlay-map-qr-label">PDF取得</div>
+          <div class="overlay-title">
+            <img id="title-img" src="./img/title.png" alt="小平市防災タウンマップ2026年8月版" crossorigin="anonymous" />
           </div>
 
-          <img id="legend-img" class="legend-image" src="./img/legend.png" alt="凡例" crossorigin="anonymous" />
-          <div class="notice-box">※災害対策用井戸
+          <div class="overlay-top-right">
+            <div class="compass-container" title="コンパス（クリックで北に復帰）" onclick="resetNorth()" style="cursor:pointer;">
+              <svg class="compass-needle" id="compass-needle" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+                <polygon points="50,22 62,56 50,48 38,56" fill="#dc2626" />
+                <polygon points="50,88 62,56 50,48 38,56" fill="#94a3b8" />
+                <circle cx="50" cy="56" r="6" fill="#1e293b" />
+                <text x="50" y="16" font-size="16" font-weight="900" fill="#dc2626" text-anchor="middle" font-family="Arial, sans-serif">N</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="overlay-bottom-right">
+            <!-- 2cm x 2cm Map QR Code (Directly above the 6cm legend) -->
+            <div class="overlay-map-qr" id="overlay-map-qr" style="display: none;" title="スマホでスキャンしてPDFダウンロード">
+              <div id="map-qr-code" class="overlay-map-qr-code"></div>
+              <div class="overlay-map-qr-label">PDF取得</div>
+            </div>
+
+            <img id="legend-img" class="legend-image" src="./img/legend.png" alt="凡例" crossorigin="anonymous" />
+            <div class="notice-box">※災害対策用井戸
 　災害時に限り、井戸所有者のご協力により生活用水としての井戸水を近隣の方々へ提供していただけるもの。
 詳しくは小平市のホームページをご確認ください。</div>
-          <div class="credit-text">MapData : OpenStreetMap</div>
+            <div class="credit-text">MapData : OpenStreetMap</div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Screen Floating QR Panel (Next to map) -->
-  <div class="screen-qr-panel" id="screen-qr-panel">
-    <div class="screen-qr-panel-header">
-      <span>📱 スマホ取得・共有QR</span>
+    <!-- Side-by-Side QR Panel (Default: Hidden, Side-by-Side with Map) -->
+    <div class="qr-sidebar" id="qr-sidebar" style="display: none;">
+      <div class="qr-sidebar-header">
+        <span>📱 スマホ取得・共有QR</span>
+        <button class="qr-sidebar-close" onclick="toggleScreenQR(false)" title="閉じる">✕</button>
+      </div>
+      <div class="qr-sidebar-body">
+        <div class="screen-qr-box" id="screen-qr-code"></div>
+        <div class="screen-qr-desc">スマホで読み取ると現在画角のPDFを直接取得できます</div>
+        <input type="text" class="screen-qr-url-input" id="screen-qr-url" readonly />
+        <button class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="copyQRUrl()">URLをコピー</button>
+      </div>
     </div>
-    <div class="screen-qr-box" id="screen-qr-code"></div>
-    <div class="screen-qr-desc">スキャンで現在画角のPDFを即座にダウンロード</div>
-    <input type="text" class="screen-qr-url-input" id="screen-qr-url" readonly />
-    <button class="btn btn-secondary btn-sm" style="width:100%; justify-content:center;" onclick="copyQRUrl()">URLをコピー</button>
   </div>
 
   <script>
@@ -462,8 +508,11 @@
     const initialPitch = urlParams.has('pitch') ? parseFloat(urlParams.get('pitch')) : 0;
     const autoDownload = urlParams.get('download') === '1' || urlParams.get('download') === 'true';
 
-    // QR output toggle (Default: OFF)
+    // Setting 1: Map PDF QR Code Print (Default: OFF)
     let isMapQREnabled = urlParams.get('qr') === '1' || urlParams.get('qr') === 'true';
+
+    // Setting 2: Screen Side-by-Side QR Panel (Default: OFF)
+    let isScreenQROpen = false;
 
     const map = new maplibregl.Map({
       container: 'map',
@@ -519,6 +568,7 @@
       map.easeTo({ pitch: 0 });
     }
 
+    // Dynamic auto-fitting ensuring A3 page frame fits within remaining preview width
     function fitPreviewToWindow() {
       const wrapper = document.querySelector('.preview-wrapper');
       const frame = document.getElementById('page-frame');
@@ -571,7 +621,6 @@
       const mapQREl = document.getElementById('map-qr-code');
       if (!screenQREl || !mapQREl) return;
 
-      // Ensure clean containers
       screenQREl.innerHTML = '';
       mapQREl.innerHTML = '';
 
@@ -627,7 +676,7 @@
       });
     }
 
-    // Toggle QR Code on Map (Default: OFF)
+    // Setting 1: Toggle Map PDF QR Print (Independent)
     function toggleMapQR(enabled) {
       isMapQREnabled = enabled;
       const mapQREl = document.getElementById('overlay-map-qr');
@@ -637,11 +686,33 @@
       updateQRCodes();
     }
 
-    // Sync toggle checkbox
-    const qrCheckbox = document.getElementById('toggle-map-qr');
-    if (qrCheckbox) {
-      qrCheckbox.checked = isMapQREnabled;
+    // Setting 2: Toggle Screen Side-by-Side QR Panel (Independent)
+    function toggleScreenQR(open) {
+      isScreenQROpen = open;
+      const sidebar = document.getElementById('qr-sidebar');
+      const toggle = document.getElementById('toggle-screen-qr');
+      if (toggle) toggle.checked = open;
+      if (sidebar) {
+        sidebar.style.display = open ? 'flex' : 'none';
+      }
+      // Re-scale preview to fit side-by-side with sidebar
+      setTimeout(fitPreviewToWindow, 50);
+      if (open && !qrInitialized) {
+        initQRCodes();
+      }
+    }
+
+    // Initialize toggle checkboxes
+    const mapQrCheckbox = document.getElementById('toggle-map-qr');
+    if (mapQrCheckbox) {
+      mapQrCheckbox.checked = isMapQREnabled;
       toggleMapQR(isMapQREnabled);
+    }
+
+    const screenQrCheckbox = document.getElementById('toggle-screen-qr');
+    if (screenQrCheckbox) {
+      screenQrCheckbox.checked = isScreenQROpen;
+      toggleScreenQR(isScreenQROpen);
     }
 
     // Auto-download trigger if download=1 in REST URL
@@ -883,7 +954,7 @@
         const totalBottomH = legendH + gap + noticeH + gap + creditH;
         const legendY = contentY + contentH - legendPad - totalBottomH;
 
-        // Draw 2cm x 2cm QR Code (ONLY if isMapQREnabled is true)
+        // Draw 2cm x 2cm QR Code on map (ONLY if isMapQREnabled is true)
         if (isMapQREnabled) {
           const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
           const qrGap = 12;
