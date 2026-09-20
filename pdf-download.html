@@ -63,13 +63,7 @@
       font-size: 20px;
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 6px;
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: #94a3b8;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .status-container {
@@ -204,8 +198,17 @@
       color: #e2e8f0;
     }
 
-    .btn-secondary:hover {
+    .btn-secondary:hover:not(:disabled) {
       background: #3f516a;
+    }
+
+    .btn-secondary:disabled {
+      background: #1e293b;
+      color: #475569;
+      border: 1px solid #334155;
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: 0.6;
     }
 
     .meta-box {
@@ -240,7 +243,6 @@
     </div>
 
     <h1>小平市防災タウンマップ</h1>
-    <div class="subtitle">A3高精細PDF (300dpi) 自動ダウンロード</div>
 
     <div class="status-container">
       <div class="spinner" id="spinner"></div>
@@ -260,13 +262,12 @@
         PDFを保存 / 再ダウンロード
       </a>
 
-      <a id="preview-link" class="btn btn-secondary" href="pdf-preview.html">
-        🖥️ PC向けプレビュー画面を開く
-      </a>
-
-      <a href="index.html" class="btn btn-secondary">
-        🗺️ Web地図を見る
-      </a>
+      <button id="close-btn" class="btn btn-secondary" onclick="closePage()" disabled>
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+        </svg>
+        ページを閉じる
+      </button>
     </div>
 
     <div class="meta-box" id="meta-info">
@@ -286,10 +287,11 @@
     const targetPitch = parseFloat(urlParams.get('pitch')) || 0;
     const isMapQREnabled = urlParams.get('qr') === '1' || urlParams.get('qr') === 'true';
 
-    // Update link to preview screen with current params
-    const previewLink = document.getElementById('preview-link');
-    if (previewLink) {
-      previewLink.href = `pdf-preview.html?lat=${targetLat}&lng=${targetLng}&zoom=${targetZoom}&bearing=${targetBearing}&pitch=${targetPitch}${isMapQREnabled ? '&qr=1' : ''}`;
+    function closePage() {
+      window.close();
+      setTimeout(() => {
+        alert('ブラウザのタブまたはアプリの「✕」ボタンから画面を閉じてください。');
+      }, 300);
     }
 
     const spinner = document.getElementById('spinner');
@@ -675,9 +677,14 @@
         // Trigger automatic download
         pdf.save('小平市防災タウンマップ_A3_300dpi.pdf');
 
-        updateStatus('ダウンロードを開始しました！', 'ダウンロードが始まらない場合は下のボタンを押してください', 100, 'done');
+        const closeBtn = document.getElementById('close-btn');
+        if (closeBtn) closeBtn.disabled = false;
+
+        updateStatus('ダウンロードを開始しました！', 'ダウンロードが始まらない場合は上のボタンを押してください', 100, 'done');
       } catch (err) {
         console.error(err);
+        const closeBtn = document.getElementById('close-btn');
+        if (closeBtn) closeBtn.disabled = false;
         updateStatus('PDF作成中にエラーが発生しました', err.message, 100, 'error');
       } finally {
         if (exportMap) {
