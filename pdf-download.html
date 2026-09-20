@@ -17,9 +17,11 @@
 
     body {
       min-height: 100vh;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      color: #f8fafc;
+      background-color: #faf7ee;
+      background-image: radial-gradient(#ede6d6 1.2px, transparent 1.2px), linear-gradient(135deg, #fdfbf7 0%, #f6f1e5 100%);
+      background-size: 24px 24px, 100% 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", Meiryo, sans-serif;
+      color: #334155;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -28,13 +30,13 @@
     }
 
     .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
+      background: #ffffff;
+      border: 1px solid #ede7db;
+      border-radius: 22px;
       width: 100%;
       max-width: 440px;
-      padding: 28px 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      padding: 34px 26px 30px;
+      box-shadow: 0 16px 36px rgba(180, 160, 130, 0.14), 0 2px 8px rgba(0, 0, 0, 0.04);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -42,37 +44,38 @@
     }
 
     .app-icon {
-      width: 60px;
-      height: 60px;
-      background: #2563eb;
-      border-radius: 14px;
+      width: 62px;
+      height: 62px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 16px;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
     }
 
     .app-icon svg {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       fill: #ffffff;
     }
 
     h1 {
-      font-size: 20px;
+      font-size: 21px;
       font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 20px;
+      color: #2d3748;
+      letter-spacing: 0.02em;
+      margin-bottom: 22px;
     }
 
     .status-container {
       width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 20px 16px;
-      margin-bottom: 20px;
+      background: #fbf9f4;
+      border: 1px solid #ede7db;
+      border-radius: 16px;
+      padding: 22px 18px;
+      margin-bottom: 22px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -81,8 +84,8 @@
     .spinner {
       width: 44px;
       height: 44px;
-      border: 4px solid #334155;
-      border-top-color: #38bdf8;
+      border: 4px solid #ede7db;
+      border-top-color: #3b82f6;
       border-radius: 50%;
       animation: spin 0.9s linear infinite;
       margin-bottom: 14px;
@@ -98,7 +101,7 @@
     .spinner.done::after {
       content: '✓';
       font-size: 24px;
-      color: #22c55e;
+      color: #16a34a;
       font-weight: bold;
       line-height: 36px;
     }
@@ -112,7 +115,7 @@
     .spinner.error::after {
       content: '✕';
       font-size: 22px;
-      color: #ef4444;
+      color: #dc2626;
       font-weight: bold;
       line-height: 36px;
     }
@@ -124,21 +127,21 @@
     .status-text {
       font-size: 15px;
       font-weight: 600;
-      color: #f1f5f9;
-      margin-bottom: 6px;
+      color: #2d3748;
+      margin-bottom: 4px;
       min-height: 22px;
     }
 
     .status-desc {
       font-size: 12px;
-      color: #64748b;
-      min-height: 18px;
+      color: #78716c;
+      min-height: 16px;
     }
 
     .progress-bar-container {
       width: 100%;
       height: 6px;
-      background: #1e293b;
+      background: #ede7db;
       border-radius: 3px;
       margin-top: 14px;
       overflow: hidden;
@@ -147,7 +150,7 @@
     .progress-bar-fill {
       height: 100%;
       width: 15%;
-      background: linear-gradient(90deg, #2563eb, #38bdf8);
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
       border-radius: 3px;
       transition: width 0.3s ease;
     }
@@ -156,13 +159,13 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .btn {
       width: 100%;
       padding: 13px 16px;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
@@ -173,21 +176,23 @@
       gap: 8px;
       transition: all 0.2s;
       border: none;
+      box-sizing: border-box;
     }
 
     .btn-primary {
       background: #2563eb;
       color: #ffffff;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
     }
 
     .btn-primary:hover:not(:disabled) {
       background: #1d4ed8;
       transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
     }
 
     .btn-primary:disabled {
-      background: #475569;
+      background: #cbd5e1;
       color: #94a3b8;
       cursor: not-allowed;
       box-shadow: none;
@@ -195,32 +200,34 @@
 
     .btn-secondary {
       background: #334155;
-      color: #e2e8f0;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(51, 65, 85, 0.15);
     }
 
     .btn-secondary:hover:not(:disabled) {
-      background: #3f516a;
+      background: #1e293b;
+      transform: translateY(-1px);
     }
 
     .btn-secondary:disabled {
-      background: #1e293b;
-      color: #475569;
-      border: 1px solid #334155;
+      background: #f5f2eb;
+      color: #a8a29e;
+      border: 1px solid #e7e2d6;
       cursor: not-allowed;
       box-shadow: none;
-      opacity: 0.6;
+      transform: none;
     }
 
     .meta-box {
-      margin-top: 18px;
+      margin-top: 20px;
       font-size: 11px;
-      color: #64748b;
+      color: #a8a29e;
       line-height: 1.5;
     }
 
     .meta-box span {
-      color: #94a3b8;
-      font-weight: 500;
+      color: #57534e;
+      font-weight: 600;
     }
 
     /* Offscreen container for MapLibre rendering */
@@ -254,6 +261,13 @@
     </div>
 
     <div class="actions">
+      <button id="close-btn" class="btn btn-secondary" onclick="closePage()" disabled>
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+        </svg>
+        ページを閉じる
+      </button>
+
       <a id="download-link" class="btn btn-primary" href="#" style="display:none;" download="小平市防災タウンマップ_A3_300dpi.pdf">
         <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
           <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
@@ -261,13 +275,6 @@
         </svg>
         PDFを保存 / 再ダウンロード
       </a>
-
-      <button id="close-btn" class="btn btn-secondary" onclick="closePage()" disabled>
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
-        </svg>
-        ページを閉じる
-      </button>
     </div>
 
     <div class="meta-box" id="meta-info">
@@ -302,7 +309,10 @@
 
     function updateStatus(text, desc, progress, state = 'running') {
       if (statusText) statusText.textContent = text;
-      if (statusDesc) statusDesc.textContent = desc;
+      if (statusDesc) {
+        statusDesc.textContent = desc || '';
+        statusDesc.style.display = desc ? 'block' : 'none';
+      }
       if (progressBar) progressBar.style.width = `${progress}%`;
       if (state === 'done') {
         spinner.className = 'spinner done';
@@ -680,7 +690,7 @@
         const closeBtn = document.getElementById('close-btn');
         if (closeBtn) closeBtn.disabled = false;
 
-        updateStatus('ダウンロードを開始しました！', 'ダウンロードが始まらない場合は上のボタンを押してください', 100, 'done');
+        updateStatus('ダウンロードを開始しました！', '', 100, 'done');
       } catch (err) {
         console.error(err);
         const closeBtn = document.getElementById('close-btn');
