@@ -318,16 +318,30 @@
       white-space: pre-wrap;
     }
     .credit-box {
-      width: 6cm;
+      width: auto;
+      max-width: 14cm;
+      white-space: nowrap;
       box-sizing: border-box;
-      font-size: 7.5pt;
-      line-height: 1.3;
+      font-size: 6.5pt;
+      line-height: 1.35;
       color: #333333;
       background: rgba(255, 255, 255, 0.95);
       padding: 2.5px 6px;
       border-radius: 2px;
       margin-top: 1px;
       text-align: right;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+    }
+    .page-disclaimer {
+      position: absolute;
+      bottom: 1.2mm;
+      right: 8mm;
+      font-size: 6pt;
+      color: #333333;
+      line-height: 1;
+      pointer-events: none;
+      white-space: nowrap;
+      font-family: -apple-system, BlinkMacSystemFont, "Yu Gothic UI", "BIZ UDPGothic", Meiryo, sans-serif;
     }
 
     /* Screen Side-by-Side QR Panel (Right Sidebar, NOT overlapping map) */
@@ -519,12 +533,13 @@
 　災害時に限り、井戸所有者のご協力により生活用水としての井戸水を近隣の方々へ提供していただけるもの。
 詳しくは小平市のホームページをご確認ください。</div>
             <div class="credit-box">
-              <div>MapData : OpenStreetMap (2026/08)</div>
-              <div>地図作製 : 高橋克典(こだいらSVCS)</div>
-              <div id="credit-datetime">出力日時 : </div>
+              <div>©OpenStreetMap contributors (ODbL)  ; MapLibre ; 地図作製：高橋克典(こだいらSVCS)</div>
+              <div>参考・出典：小平市防災マップ ; 東京消防庁オープンデータ ; 国土交通省位置参照情報ダウンロードサービス</div>
+              <div>NPO法人小平井戸の会様の情報も参考にさせていただきました</div>
             </div>
           </div>
         </div>
+        <div class="page-disclaimer">本マップは2026年8月時点の情報をもとに個人／団体が自主作成したものです。避難所や設備の最新情報・正確な運用状況については小平市公式情報をご確認ください。</div>
       </div>
     </div>
 
@@ -773,27 +788,11 @@
       });
     }
 
-    function updateCreditDateTime() {
-      const el = document.getElementById('credit-datetime');
-      if (el) {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        const hh = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        el.textContent = `出力日時 : ${y}/${m}/${d} ${hh}:${min}`;
-      }
-    }
-    updateCreditDateTime();
-
     map.on('load', () => {
       initQRCodes();
-      updateCreditDateTime();
     });
     setTimeout(() => {
       initQRCodes();
-      updateCreditDateTime();
     }, 200);
 
     // High-Resolution 2D Canvas Compositor with +1 Zoom Level Tiles (300 DPI)
@@ -1019,19 +1018,11 @@
         const noticePadX = 20;
         const noticeH = noticePadY * 2 + noticeLines.length * noticeLineHeight;
 
-        // Credit formatting (3 lines, maintaining 22px font size)
-        const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const dd = String(now.getDate()).padStart(2, '0');
-        const hh = String(now.getHours()).padStart(2, '0');
-        const min = String(now.getMinutes()).padStart(2, '0');
-        const dateStr = `出力日時 : ${yyyy}/${mm}/${dd} ${hh}:${min}`;
-
+        // Credit formatting (3 lines, maintaining 22px font size, no datetime)
         const creditLines = [
-          'MapData : OpenStreetMap (2026/08)',
-          '地図作製 : 高橋克典(こだいらSVCS)',
-          dateStr
+          '©OpenStreetMap contributors (ODbL)  ; MapLibre ; 地図作製：高橋克典(こだいらSVCS)',
+          '参考・出典：小平市防災マップ ; 東京消防庁オープンデータ ; 国土交通省位置参照情報ダウンロードサービス',
+          'NPO法人小平井戸の会様の情報も参考にさせていただきました'
         ];
         const creditFontSize = 22;
         const creditLineHeight = 28;
@@ -1039,6 +1030,15 @@
         const creditPadX = 14;
         const creditH = creditPadY * 2 + creditLines.length * creditLineHeight; // 100 px
         const gap = 6;
+
+        ctx.font = `${creditFontSize}px Arial, sans-serif`;
+        let maxCreditTextW = 0;
+        for (let i = 0; i < creditLines.length; i++) {
+          const w = ctx.measureText(creditLines[i]).width;
+          if (w > maxCreditTextW) maxCreditTextW = w;
+        }
+        const creditW = Math.max(legendW, Math.round(maxCreditTextW + creditPadX * 2));
+        const creditX = legendX + legendW - creditW;
 
         const legendY = contentY + contentH - legendPadBottom - (legendH + gap + noticeH + gap + creditH);
 
@@ -1126,19 +1126,33 @@
         }
         ctx.restore();
 
-        // Draw Credit Box (3 lines)
+        // Draw Credit Box (3 lines, extending to left as needed)
         const creditY = noticeY + noticeH + gap;
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.fillRect(legendX, creditY, legendW, creditH);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fillRect(creditX, creditY, creditW, creditH);
         ctx.font = `${creditFontSize}px Arial, sans-serif`;
         ctx.fillStyle = '#333333';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
         for (let i = 0; i < creditLines.length; i++) {
           const lineY = creditY + creditPadY + i * creditLineHeight + creditLineHeight / 2;
-          ctx.fillText(creditLines[i], legendX + legendW - creditPadX, lineY);
+          ctx.fillText(creditLines[i], creditX + creditW - creditPadX, lineY);
         }
+        ctx.restore();
+
+        // 7. Draw Disclaimer in bottom-right margin (6pt)
+        const disclaimerText = '本マップは2026年8月時点の情報をもとに個人／団体が自主作成したものです。避難所や設備の最新情報・正確な運用状況については小平市公式情報をご確認ください。';
+        const disclaimerFontSize = Math.round(6 * (300 / 72)); // 25 px (6pt)
+        const disclaimerX = contentX + contentW - legendPadRight;
+        const disclaimerY = contentY + contentH + Math.round(margin / 2);
+
+        ctx.save();
+        ctx.font = `${disclaimerFontSize}px -apple-system, BlinkMacSystemFont, "Yu Gothic UI", "BIZ UDPGothic", Meiryo, sans-serif`;
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(disclaimerText, disclaimerX, disclaimerY);
         ctx.restore();
 
         // Export to jsPDF
