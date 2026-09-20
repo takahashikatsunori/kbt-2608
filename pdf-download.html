@@ -573,17 +573,17 @@
         const noticePadX = 20;
         const noticeH = noticePadY * 2 + noticeLines.length * noticeLineHeight;
 
-        // Credit formatting (3 lines, maintaining 22px font size, no datetime)
+        // Credit formatting (3 lines, 3pt font size, no datetime)
         const creditLines = [
           '©OpenStreetMap contributors (ODbL)  ; MapLibre ; 地図作製：高橋克典(こだいらSVCS)',
           '参考・出典：小平市防災マップ ; 東京消防庁オープンデータ ; 国土交通省位置参照情報ダウンロードサービス',
           'NPO法人小平井戸の会様の情報も参考にさせていただきました'
         ];
-        const creditFontSize = 22;
-        const creditLineHeight = 28;
-        const creditPadY = 8;
-        const creditPadX = 14;
-        const creditH = creditPadY * 2 + creditLines.length * creditLineHeight; // 100 px
+        const creditFontSize = 13; // 3pt at 300 DPI (300/72 * 3 = 12.5px -> 13px)
+        const creditLineHeight = 17;
+        const creditPadY = 4;
+        const creditPadX = 8;
+        const creditH = creditPadY * 2 + creditLines.length * creditLineHeight; // 59 px (~5mm)
         const gap = 6;
 
         ctx.font = `${creditFontSize}px Arial, sans-serif`;
