@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>PDF作成・ダウンロード - 小平市防災タウンマップ</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="anonymous" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 440px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .app-icon {
+      width: 60px;
+      height: 60px;
+      background: #2563eb;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .app-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: #ffffff;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+
+    .status-container {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid #334155;
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 14px;
+    }
+
+    .spinner.done {
+      border-color: #22c55e;
+      border-top-color: #22c55e;
+      animation: none;
+      position: relative;
+    }
+
+    .spinner.done::after {
+      content: '✓';
+      font-size: 24px;
+      color: #22c55e;
+      font-weight: bold;
+      line-height: 36px;
+    }
+
+    .spinner.error {
+      border-color: #ef4444;
+      border-top-color: #ef4444;
+      animation: none;
+    }
+
+    .spinner.error::after {
+      content: '✕';
+      font-size: 22px;
+      color: #ef4444;
+      font-weight: bold;
+      line-height: 36px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+      min-height: 22px;
+    }
+
+    .status-desc {
+      font-size: 12px;
+      color: #64748b;
+      min-height: 18px;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 3px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 15%;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .actions {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      background: #475569;
+      color: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: #3f516a;
+    }
+
+    .meta-box {
+      margin-top: 18px;
+      font-size: 11px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .meta-box span {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    /* Offscreen container for MapLibre rendering */
+    #hidden-container {
+      position: fixed;
+      left: -99999px;
+      top: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="app-icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/>
+      </svg>
+    </div>
+
+    <h1>小平市防災タウンマップ</h1>
+    <div class="subtitle">A3高精細PDF (300dpi) 自動ダウンロード</div>
+
+    <div class="status-container">
+      <div class="spinner" id="spinner"></div>
+      <div class="status-text" id="status-text">地図データを準備中...</div>
+      <div class="status-desc" id="status-desc">高解像度タイルを読み込んでいます</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a id="download-link" class="btn btn-primary" href="#" style="display:none;" download="小平市防災タウンマップ_A3_300dpi.pdf">
+        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.1 0 1 0-.708.708l3 3z"/>
+        </svg>
+        PDFを保存 / 再ダウンロード
+      </a>
+
+      <a id="preview-link" class="btn btn-secondary" href="pdf-preview.html">
+        🖥️ PC向けプレビュー画面を開く
+      </a>
+
+      <a href="index.html" class="btn btn-secondary">
+        🗺️ Web地図を見る
+      </a>
+    </div>
+
+    <div class="meta-box" id="meta-info">
+      用紙: <span>A3横 (420×297mm)</span> / 解像度: <span>300 DPI</span>
+    </div>
+  </div>
+
+  <div id="hidden-container"></div>
+  <div id="hidden-qr" style="display:none;"></div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetLat = parseFloat(urlParams.get('lat')) || 35.73489;
+    const targetLng = parseFloat(urlParams.get('lng')) || 139.47766;
+    const targetZoom = parseFloat(urlParams.get('zoom')) || 15.5;
+    const targetBearing = parseFloat(urlParams.get('bearing')) || 0;
+    const targetPitch = parseFloat(urlParams.get('pitch')) || 0;
+    const isMapQREnabled = urlParams.get('qr') === '1' || urlParams.get('qr') === 'true';
+
+    // Update link to preview screen with current params
+    const previewLink = document.getElementById('preview-link');
+    if (previewLink) {
+      previewLink.href = `pdf-preview.html?lat=${targetLat}&lng=${targetLng}&zoom=${targetZoom}&bearing=${targetBearing}&pitch=${targetPitch}${isMapQREnabled ? '&qr=1' : ''}`;
+    }
+
+    const spinner = document.getElementById('spinner');
+    const statusText = document.getElementById('status-text');
+    const statusDesc = document.getElementById('status-desc');
+    const progressBar = document.getElementById('progress-bar');
+    const downloadLink = document.getElementById('download-link');
+
+    function updateStatus(text, desc, progress, state = 'running') {
+      if (statusText) statusText.textContent = text;
+      if (statusDesc) statusDesc.textContent = desc;
+      if (progressBar) progressBar.style.width = `${progress}%`;
+      if (state === 'done') {
+        spinner.className = 'spinner done';
+      } else if (state === 'error') {
+        spinner.className = 'spinner error';
+      }
+    }
+
+    // Helper: Ground scale calculation (Mercator)
+    function calculateScale(lat, zoom) {
+      const latRad = lat * Math.PI / 180;
+      const metersPerPixel = (156543.03392 * Math.cos(latRad)) / Math.pow(2, zoom);
+      const maxWidth = 100; // CSS px at 96 DPI
+      const maxMeters = maxWidth * metersPerPixel;
+
+      const niceNumbers = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000];
+      let chosenMeters = niceNumbers[0];
+      for (const n of niceNumbers) {
+        if (n <= maxMeters) {
+          chosenMeters = n;
+        } else {
+          break;
+        }
+      }
+
+      const cssWidth = chosenMeters / metersPerPixel;
+      const scaleW = Math.round(cssWidth * (300 / 96));
+      const scaleText = chosenMeters < 1000 ? `${chosenMeters} m` : `${chosenMeters / 1000} km`;
+      return { scaleW, scaleText };
+    }
+
+    // Load an image asynchronously
+    function loadImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    async function generateAndDownloadPDF() {
+      let exportMap = null;
+      let hiddenContainer = document.getElementById('hidden-container');
+
+      try {
+        updateStatus('画像リソースを準備中...', 'タイトル・凡例画像をロードしています', 20);
+        const [titleImg, legendImg] = await Promise.all([
+          loadImage('./img/title.png'),
+          loadImage('./img/legend.png')
+        ]);
+
+        updateStatus('高解像度タイルを取得中...', '+1段階ズームの高精細地図を描画しています', 40);
+
+        // Dimensions of inner map content
+        const baseW = 1550; // 410mm at 96 DPI
+        const baseH = 1085; // 287mm at 96 DPI
+        const renderZoom = Math.min(targetZoom + 1, 19);
+        const zoomDelta = renderZoom - targetZoom;
+        const scaleMult = Math.pow(2, zoomDelta);
+
+        const exportW = Math.round(baseW * scaleMult);
+        const exportH = Math.round(baseH * scaleMult);
+
+        hiddenContainer.style.width = `${exportW}px`;
+        hiddenContainer.style.height = `${exportH}px`;
+
+        exportMap = new maplibregl.Map({
+          container: hiddenContainer,
+          preserveDrawingBuffer: true,
+          center: [targetLng, targetLat],
+          zoom: renderZoom,
+          bearing: targetBearing,
+          pitch: targetPitch,
+          style: {
+            version: 8,
+            sources: {
+              'custom-tiles': {
+                type: 'raster',
+                tiles: ['./tiles/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                minzoom: 13,
+                maxzoom: 19,
+                attribution: 'MapData : OpenStreetMap'
+              }
+            },
+            layers: [
+              {
+                id: 'custom-tiles-layer',
+                type: 'raster',
+                source: 'custom-tiles',
+                minzoom: 13,
+                maxzoom: 19
+              }
+            ]
+          }
+        });
+
+        // Wait for tiles to finish loading
+        await Promise.race([
+          new Promise(resolve => exportMap.once('idle', resolve)),
+          new Promise(resolve => setTimeout(resolve, 8000))
+        ]);
+
+        updateStatus('300dpi PDFを合成中...', 'A3用紙サイズに高精細レンダリングを行っています', 75);
+
+        // 300 DPI Canvas (A3 Landscape: 420mm x 297mm)
+        const dpmm = 300 / 25.4; // 11.811 px/mm
+        const canvasW = Math.round(420 * dpmm); // 4961 px
+        const canvasH = Math.round(297 * dpmm); // 3508 px
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        const ctx = canvas.getContext('2d');
+
+        // 1. Draw Page Background (White)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+
+        // 2. 5mm Margins and Inner Content Dimensions
+        const marginPx = Math.round(5 * dpmm); // 59 px
+        const contentX = marginPx;
+        const contentY = marginPx;
+        const contentW = canvasW - (marginPx * 2); // 4843 px (410mm)
+        const contentH = canvasH - (marginPx * 2); // 3390 px (287mm)
+
+        // 3. Draw Map from Offscreen Canvas
+        const mapCanvas = exportMap.getCanvas();
+        ctx.drawImage(mapCanvas, 0, 0, mapCanvas.width, mapCanvas.height, contentX, contentY, contentW, contentH);
+
+        // 4. Draw Inner Content Border
+        ctx.strokeStyle = '#cccccc';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(contentX, contentY, contentW, contentH);
+
+        // 5. Draw Title Image (top: 3mm, left: 3mm, width: 10cm = 100mm)
+        if (titleImg) {
+          const titleW = Math.round(100 * dpmm); // 1181 px
+          const titleH = titleW * (titleImg.naturalHeight / titleImg.naturalWidth);
+          const titlePad = Math.round(3 * dpmm);
+          const titleX = contentX + titlePad;
+          const titleY = contentY + titlePad;
+
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 24;
+          ctx.shadowOffsetY = 8;
+          ctx.drawImage(titleImg, titleX, titleY, titleW, titleH);
+          ctx.restore();
+        }
+
+        // 6. Draw Compass (top: 8mm, right: 8mm)
+        const compassR = Math.round(32 * (300 / 96)); // ~100px radius
+        const compassPad = Math.round(8 * dpmm);
+        const compassCenterX = contentX + contentW - compassPad - compassR;
+        const compassCenterY = contentY + compassPad + compassR;
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 8;
+        ctx.beginPath();
+        ctx.arc(compassCenterX, compassCenterY, compassR, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.stroke();
+        ctx.restore();
+
+        // Rotate needle with map bearing
+        ctx.save();
+        ctx.translate(compassCenterX, compassCenterY);
+        const bearingRad = (-targetBearing) * Math.PI / 180;
+        ctx.rotate(bearingRad);
+
+        const arrowH = compassR * 0.72;
+        const arrowW = compassR * 0.25;
+
+        // North arrow (Red)
+        ctx.beginPath();
+        ctx.moveTo(0, -arrowH);
+        ctx.lineTo(arrowW, 0);
+        ctx.lineTo(0, -arrowH * 0.2);
+        ctx.lineTo(-arrowW, 0);
+        ctx.closePath();
+        ctx.fillStyle = '#dc2626';
+        ctx.fill();
+
+        // South arrow (Silver)
+        ctx.beginPath();
+        ctx.moveTo(0, arrowH);
+        ctx.lineTo(arrowW, 0);
+        ctx.lineTo(0, arrowH * 0.2);
+        ctx.lineTo(-arrowW, 0);
+        ctx.closePath();
+        ctx.fillStyle = '#94a3b8';
+        ctx.fill();
+
+        // Center hub
+        ctx.beginPath();
+        ctx.arc(0, 0, compassR * 0.12, 0, Math.PI * 2);
+        ctx.fillStyle = '#1e293b';
+        ctx.fill();
+
+        // "N" Mark (Large bold red)
+        ctx.font = `900 ${Math.round(compassR * 0.4)}px Arial, sans-serif`;
+        ctx.fillStyle = '#dc2626';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('N', 0, -arrowH - 4);
+        ctx.restore();
+
+        // 7. Draw Scale Bar (bottom: 8mm, left: 8mm)
+        const { scaleW, scaleText } = calculateScale(targetLat, targetZoom);
+        const scalePad = Math.round(8 * dpmm);
+        const scaleX = contentX + scalePad;
+        const scaleY = contentY + contentH - scalePad - 30;
+
+        ctx.save();
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(scaleX, scaleY - 14);
+        ctx.lineTo(scaleX, scaleY);
+        ctx.lineTo(scaleX + scaleW, scaleY);
+        ctx.lineTo(scaleX + scaleW, scaleY - 14);
+        ctx.stroke();
+
+        ctx.font = 'bold 24px Arial, sans-serif';
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(scaleText, scaleX + scaleW / 2, scaleY - 4);
+        ctx.restore();
+
+        // 8. Draw Legend + Notice Box + Credit (bottom: 8mm, right: 8mm, width: 6cm = 60mm)
+        const legendW = Math.round(60 * dpmm); // 709 px (6cm)
+        const legendPad = Math.round(8 * dpmm);
+        const legendX = contentX + contentW - legendPad - legendW;
+
+        const legendH = (legendImg && legendImg.naturalWidth > 0)
+          ? legendW * (legendImg.naturalHeight / legendImg.naturalWidth)
+          : Math.round(legendW * 0.4);
+
+        const noticeLines = [
+          '※災害対策用井戸',
+          '　災害時に限り、井戸所有者のご協力により生活用水としての',
+          '　井戸水を近隣の方々へ提供していただけるもの。',
+          '詳しくは小平市のホームページをご確認ください。'
+        ];
+        const noticeFontSize = 21;
+        const noticeLineHeight = 32;
+        const noticePadY = 18;
+        const noticePadX = 20;
+        const noticeH = noticePadY * 2 + noticeLines.length * noticeLineHeight;
+        const creditH = 36;
+        const gap = 8;
+
+        const totalBottomH = legendH + gap + noticeH + gap + creditH;
+        const legendY = contentY + contentH - legendPad - totalBottomH;
+
+        // Draw 2cm x 2cm QR Code on map if enabled
+        if (isMapQREnabled) {
+          const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
+          const qrGap = 12;
+          const qrX = legendX + legendW - qrSize;
+          const qrY = legendY - qrSize - qrGap;
+
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(qrX, qrY, qrSize, qrSize);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(qrX, qrY, qrSize, qrSize);
+
+          // Generate QR code offscreen
+          const qrContainer = document.getElementById('hidden-qr');
+          qrContainer.innerHTML = '';
+          const downloadUrl = window.location.href;
+          new QRCode(qrContainer, {
+            text: downloadUrl,
+            width: 180,
+            height: 180,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+
+          const qrCanvas = qrContainer.querySelector('canvas') || qrContainer.querySelector('img');
+          if (qrCanvas) {
+            ctx.drawImage(qrCanvas, qrX + 10, qrY + 10, qrSize - 20, qrSize - 30);
+          }
+
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillStyle = '#334155';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('PDF取得', qrX + qrSize / 2, qrY + qrSize - 4);
+          ctx.restore();
+        }
+
+        // Draw Legend Image
+        if (legendImg && legendImg.naturalWidth > 0) {
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+          ctx.shadowBlur = 18;
+          ctx.shadowOffsetY = 6;
+          ctx.drawImage(legendImg, legendX, legendY, legendW, legendH);
+          ctx.restore();
+        }
+
+        // Draw Notice Box
+        const noticeY = legendY + legendH + gap;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 5;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(legendX, noticeY, legendW, noticeH);
+        ctx.strokeStyle = '#cccccc';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(legendX, noticeY, legendW, noticeH);
+
+        ctx.font = `${noticeFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        for (let i = 0; i < noticeLines.length; i++) {
+          ctx.fillText(noticeLines[i], legendX + noticePadX, noticeY + noticePadY + i * noticeLineHeight);
+        }
+        ctx.restore();
+
+        // Draw Credit
+        const creditY = noticeY + noticeH + gap;
+        ctx.save();
+        ctx.font = '22px Arial, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(legendX, creditY, legendW, creditH);
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('MapData : OpenStreetMap', legendX + legendW - 12, creditY + creditH / 2);
+        ctx.restore();
+
+        // Convert to jsPDF
+        updateStatus('PDFをダウンロード中...', '端末へファイルを送信しています', 95);
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: 'landscape',
+          unit: 'mm',
+          format: 'a3'
+        });
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, 420, 297);
+
+        // Generate Blob for direct download link & mobile Safari compatibility
+        const pdfBlob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+
+        // Update download button
+        downloadLink.href = pdfUrl;
+        downloadLink.style.display = 'inline-flex';
+
+        // Trigger automatic download
+        pdf.save('小平市防災タウンマップ_A3_300dpi.pdf');
+
+        updateStatus('ダウンロードを開始しました！', 'ダウンロードが始まらない場合は下のボタンを押してください', 100, 'done');
+      } catch (err) {
+        console.error(err);
+        updateStatus('PDF作成中にエラーが発生しました', err.message, 100, 'error');
+      } finally {
+        if (exportMap) {
+          try { exportMap.remove(); } catch(e) {}
+        }
+      }
+    }
+
+    // Start PDF creation automatically when page loads
+    window.addEventListener('load', () => {
+      setTimeout(generateAndDownloadPDF, 400);
+    });
+  </script>
+</body>
+</html>

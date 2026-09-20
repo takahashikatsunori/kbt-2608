@@ -593,7 +593,7 @@
     map.on('load', fitPreviewToWindow);
     setTimeout(fitPreviewToWindow, 100);
 
-    // Dynamic REST URL and QR Code Management
+    // Dynamic REST URL and QR Code Management (Points to dedicated mobile download page)
     function getDynamicDownloadUrl() {
       const center = map.getCenter();
       const zoom = map.getZoom().toFixed(2);
@@ -602,12 +602,16 @@
       const lat = center.lat.toFixed(5);
       const lng = center.lng.toFixed(5);
 
-      const base = window.location.origin + window.location.pathname;
-      let url = `${base}?download=1&lat=${lat}&lng=${lng}&zoom=${zoom}&bearing=${bearing}&pitch=${pitch}`;
+      const downloadUrl = new URL('pdf-download.html', window.location.href);
+      downloadUrl.searchParams.set('lat', lat);
+      downloadUrl.searchParams.set('lng', lng);
+      downloadUrl.searchParams.set('zoom', zoom);
+      downloadUrl.searchParams.set('bearing', bearing);
+      downloadUrl.searchParams.set('pitch', pitch);
       if (isMapQREnabled) {
-        url += '&qr=1';
+        downloadUrl.searchParams.set('qr', '1');
       }
-      return url;
+      return downloadUrl.href;
     }
 
     let screenQRCode = null;

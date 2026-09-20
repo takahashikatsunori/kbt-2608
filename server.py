@@ -35,8 +35,8 @@ class MapRequestHandler(http.server.SimpleHTTPRequestHandler):
             pitch = query.get('pitch', ['0'])[0]
             qr = query.get('qr', ['0'])[0]
 
-            # Redirect to pdf-preview.html with auto-download parameters
-            target_url = f"/pdf-preview.html?download=1&lat={lat}&lng={lng}&zoom={zoom}&bearing={bearing}&pitch={pitch}"
+            # Redirect to pdf-download.html with parameters
+            target_url = f"/pdf-download.html?lat={lat}&lng={lng}&zoom={zoom}&bearing={bearing}&pitch={pitch}"
             if qr in ['1', 'true']:
                 target_url += "&qr=1"
             self.send_response(302)
