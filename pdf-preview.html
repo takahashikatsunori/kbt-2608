@@ -48,14 +48,14 @@
       background: #2563eb;
       color: white;
       border: none;
-      padding: 9px 18px;
+      padding: 8px 16px;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
       transition: all 0.2s ease;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
@@ -82,6 +82,31 @@
     .toolbar-desc {
       font-size: 12px;
       color: #94a3b8;
+    }
+
+    .qr-toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #e2e8f0;
+      cursor: pointer;
+      padding: 6px 12px;
+      background: #334155;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .qr-toggle-label:hover {
+      background: #3b4d66;
+    }
+    .qr-toggle-label input[type="checkbox"] {
+      cursor: pointer;
+      width: 16px;
+      height: 16px;
+      accent-color: #2563eb;
     }
 
     /* Screen Preview Wrapper */
@@ -180,12 +205,20 @@
       transition: transform 0.1s linear;
     }
 
-    /* 2cm x 2cm QR Code (Top-Right of Legend) */
-    .overlay-map-qr {
+    /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit + 2cm QR */
+    .overlay-bottom-right {
       position: absolute;
-      bottom: calc(8mm + 7.8cm); /* Positioned right above the 6cm legend */
+      bottom: 8mm;
       right: 8mm;
       z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    /* 2cm x 2cm Map QR Code (Directly above Legend) */
+    .overlay-map-qr {
       width: 2cm;
       height: 2cm;
       background: #ffffff;
@@ -197,32 +230,31 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      border-radius: 2px;
+      margin-bottom: 2mm;
     }
     .overlay-map-qr-code {
-      width: 17mm !important;
-      height: 17mm !important;
+      width: 15mm !important;
+      height: 15mm !important;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .overlay-map-qr-code canvas,
     .overlay-map-qr-code img {
-      width: 17mm !important;
-      height: 17mm !important;
+      width: 15mm !important;
+      height: 15mm !important;
       display: block;
     }
-
-    /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit */
-    .overlay-bottom-right {
-      position: absolute;
-      bottom: 8mm;
-      right: 8mm;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 4px;
+    .overlay-map-qr-label {
+      font-size: 5pt;
+      color: #334155;
+      font-weight: bold;
+      line-height: 1;
+      margin-top: 1mm;
+      text-align: center;
     }
+
     .legend-image {
       width: 6cm;
       height: auto;
@@ -256,20 +288,20 @@
       position: fixed;
       right: 20px;
       bottom: 20px;
-      width: 220px;
-      background: rgba(30, 41, 59, 0.95);
+      width: 210px;
+      background: rgba(30, 41, 59, 0.96);
       color: #ffffff;
       border: 1px solid #475569;
       border-radius: 8px;
-      padding: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
       z-index: 1001;
       backdrop-filter: blur(8px);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      transition: transform 0.2s ease;
+      gap: 10px;
+      box-sizing: border-box;
     }
     .screen-qr-panel-header {
       width: 100%;
@@ -282,23 +314,26 @@
     }
     .screen-qr-box {
       background: #ffffff;
-      padding: 6px;
-      border-radius: 4px;
+      padding: 8px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 130px;
-      height: 130px;
+      width: 140px;
+      height: 140px;
+      box-sizing: border-box;
+      overflow: hidden;
     }
     .screen-qr-box canvas, .screen-qr-box img {
-      width: 130px !important;
-      height: 130px !important;
+      width: 124px !important;
+      height: 124px !important;
+      display: block;
     }
     .screen-qr-desc {
       font-size: 11px;
       color: #cbd5e1;
       text-align: center;
-      line-height: 1.3;
+      line-height: 1.35;
     }
     .screen-qr-url-input {
       width: 100%;
@@ -306,7 +341,7 @@
       border: 1px solid #334155;
       color: #94a3b8;
       font-size: 10px;
-      padding: 4px 6px;
+      padding: 5px 6px;
       border-radius: 4px;
       box-sizing: border-box;
     }
@@ -351,6 +386,10 @@
       <span class="toolbar-desc">ドラッグで移動、右ドラッグ / Ctrl+ドラッグで回転・傾き調整できます</span>
     </div>
     <div class="toolbar-actions">
+      <label class="qr-toggle-label" title="出力するPDFの凡例右上に2cm角のQRコードを印刷します">
+        <input type="checkbox" id="toggle-map-qr" onchange="toggleMapQR(this.checked)" />
+        <span>地図にQR印字</span>
+      </label>
       <button class="btn btn-secondary" onclick="resetNorth()">北を上にセット</button>
       <button class="btn btn-secondary" onclick="resetPitch()">傾きリセット</button>
       <button class="btn btn-secondary" onclick="window.print()" title="予備のブラウザ印刷機能">ブラウザ印刷 (A3)</button>
@@ -385,12 +424,13 @@
           </div>
         </div>
 
-        <!-- 2cm x 2cm Map QR Code (Above Legend) -->
-        <div class="overlay-map-qr" id="overlay-map-qr" title="スマホでスキャンしてPDFダウンロード">
-          <div id="map-qr-code" class="overlay-map-qr-code"></div>
-        </div>
-
         <div class="overlay-bottom-right">
+          <!-- 2cm x 2cm Map QR Code (Directly above the 6cm legend) -->
+          <div class="overlay-map-qr" id="overlay-map-qr" style="display: none;" title="スマホでスキャンしてPDFダウンロード">
+            <div id="map-qr-code" class="overlay-map-qr-code"></div>
+            <div class="overlay-map-qr-label">PDF取得</div>
+          </div>
+
           <img id="legend-img" class="legend-image" src="./img/legend.png" alt="凡例" crossorigin="anonymous" />
           <div class="notice-box">※災害対策用井戸
 　災害時に限り、井戸所有者のご協力により生活用水としての井戸水を近隣の方々へ提供していただけるもの。
@@ -421,6 +461,9 @@
     const initialBearing = urlParams.has('bearing') ? parseFloat(urlParams.get('bearing')) : 0;
     const initialPitch = urlParams.has('pitch') ? parseFloat(urlParams.get('pitch')) : 0;
     const autoDownload = urlParams.get('download') === '1' || urlParams.get('download') === 'true';
+
+    // QR output toggle (Default: OFF)
+    let isMapQREnabled = urlParams.get('qr') === '1' || urlParams.get('qr') === 'true';
 
     const map = new maplibregl.Map({
       container: 'map',
@@ -510,27 +553,41 @@
       const lng = center.lng.toFixed(5);
 
       const base = window.location.origin + window.location.pathname;
-      return `${base}?download=1&lat=${lat}&lng=${lng}&zoom=${zoom}&bearing=${bearing}&pitch=${pitch}`;
+      let url = `${base}?download=1&lat=${lat}&lng=${lng}&zoom=${zoom}&bearing=${bearing}&pitch=${pitch}`;
+      if (isMapQREnabled) {
+        url += '&qr=1';
+      }
+      return url;
     }
 
     let screenQRCode = null;
     let mapQRCode = null;
+    let qrInitialized = false;
 
     function initQRCodes() {
+      if (qrInitialized) return;
+
       const screenQREl = document.getElementById('screen-qr-code');
       const mapQREl = document.getElementById('map-qr-code');
+      if (!screenQREl || !mapQREl) return;
+
+      // Ensure clean containers
+      screenQREl.innerHTML = '';
+      mapQREl.innerHTML = '';
+
+      const url = getDynamicDownloadUrl();
 
       screenQRCode = new QRCode(screenQREl, {
-        text: getDynamicDownloadUrl(),
-        width: 130,
-        height: 130,
+        text: url,
+        width: 124,
+        height: 124,
         colorDark: '#0f172a',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
       });
 
       mapQRCode = new QRCode(mapQREl, {
-        text: getDynamicDownloadUrl(),
+        text: url,
         width: 180,
         height: 180,
         colorDark: '#0f172a',
@@ -538,8 +595,10 @@
         correctLevel: QRCode.CorrectLevel.M
       });
 
+      qrInitialized = true;
+
       const urlInput = document.getElementById('screen-qr-url');
-      if (urlInput) urlInput.value = getDynamicDownloadUrl();
+      if (urlInput) urlInput.value = url;
     }
 
     let qrTimeout = null;
@@ -552,7 +611,7 @@
 
         if (screenQRCode) screenQRCode.makeCode(url);
         if (mapQRCode) mapQRCode.makeCode(url);
-      }, 250);
+      }, 200);
     }
 
     map.on('moveend', updateQRCodes);
@@ -568,6 +627,23 @@
       });
     }
 
+    // Toggle QR Code on Map (Default: OFF)
+    function toggleMapQR(enabled) {
+      isMapQREnabled = enabled;
+      const mapQREl = document.getElementById('overlay-map-qr');
+      if (mapQREl) {
+        mapQREl.style.display = enabled ? 'flex' : 'none';
+      }
+      updateQRCodes();
+    }
+
+    // Sync toggle checkbox
+    const qrCheckbox = document.getElementById('toggle-map-qr');
+    if (qrCheckbox) {
+      qrCheckbox.checked = isMapQREnabled;
+      toggleMapQR(isMapQREnabled);
+    }
+
     // Auto-download trigger if download=1 in REST URL
     if (autoDownload) {
       map.once('idle', () => {
@@ -577,9 +653,8 @@
       });
     }
 
-    // Initialize QR codes on map load
     map.on('load', initQRCodes);
-    setTimeout(initQRCodes, 300);
+    setTimeout(initQRCodes, 200);
 
     // High-Resolution 2D Canvas Compositor with +1 Zoom Level Tiles (300 DPI)
     async function downloadPDF() {
@@ -594,7 +669,7 @@
         const currentZoom = map.getZoom();
         const targetZoom = Math.min(currentZoom + 1, 19);
         const zoomDelta = targetZoom - currentZoom;
-        const scaleMult = Math.pow(2, zoomDelta); // 2.0 when +1 zoom, 1.0 when already at 19
+        const scaleMult = Math.pow(2, zoomDelta);
 
         // Dimensions of the inner map container at 96 DPI base
         const baseW = 1550; // 410mm at 96 DPI
@@ -808,28 +883,36 @@
         const totalBottomH = legendH + gap + noticeH + gap + creditH;
         const legendY = contentY + contentH - legendPad - totalBottomH;
 
-        // Draw 2cm x 2cm QR Code right above the Legend box (top-right of legend)
-        const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
-        const qrGap = 12;
-        const qrX = legendX + legendW - qrSize; // Right-aligned with legend
-        const qrY = legendY - qrSize - qrGap;
+        // Draw 2cm x 2cm QR Code (ONLY if isMapQREnabled is true)
+        if (isMapQREnabled) {
+          const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
+          const qrGap = 12;
+          const qrX = legendX + legendW - qrSize;
+          const qrY = legendY - qrSize - qrGap;
 
-        // Draw QR box background & border
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetY = 4;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(qrX, qrY, qrSize, qrSize);
-        ctx.strokeStyle = '#cbd5e1';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(qrX, qrY, qrSize, qrSize);
-        ctx.restore();
+          // Draw QR box background & border
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 4;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(qrX, qrY, qrSize, qrSize);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(qrX, qrY, qrSize, qrSize);
 
-        // Draw the QR Code image
-        const mapQRElem = document.querySelector('#map-qr-code canvas') || document.querySelector('#map-qr-code img');
-        if (mapQRElem) {
-          ctx.drawImage(mapQRElem, qrX + 12, qrY + 12, qrSize - 24, qrSize - 24);
+          // Draw QR Code
+          const mapQRElem = document.querySelector('#map-qr-code canvas') || document.querySelector('#map-qr-code img');
+          if (mapQRElem) {
+            ctx.drawImage(mapQRElem, qrX + 10, qrY + 10, qrSize - 20, qrSize - 30);
+          }
+          // Label
+          ctx.font = 'bold 16px sans-serif';
+          ctx.fillStyle = '#334155';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('PDF取得', qrX + qrSize / 2, qrY + qrSize - 4);
+          ctx.restore();
         }
 
         // Draw Legend Image
