@@ -374,16 +374,79 @@
     map.on('load', fitPreviewToWindow);
     setTimeout(fitPreviewToWindow, 100);
 
-    // Direct High-Resolution 2D Canvas Compositor for PDF Export (300 DPI)
+    // High-Resolution 2D Canvas Compositor with +1 Zoom Level Tiles (300 DPI)
     async function downloadPDF() {
       const btn = document.getElementById('pdf-btn');
       btn.disabled = true;
-      btn.textContent = '最高画質(300dpi)PDF生成中...';
+      btn.textContent = '高解像度タイル取得中...';
+
+      let hiddenContainer = null;
+      let exportMap = null;
 
       try {
+        const currentZoom = map.getZoom();
+        const targetZoom = Math.min(currentZoom + 1, 19);
+        const zoomDelta = targetZoom - currentZoom;
+        const scaleMult = Math.pow(2, zoomDelta); // 2.0 when +1 zoom, 1.0 when already at 19
+
+        // Dimensions of the inner map container at 96 DPI base
+        const baseW = 1550; // 410mm at 96 DPI
+        const baseH = 1085; // 287mm at 96 DPI
+        const exportW = Math.round(baseW * scaleMult);
+        const exportH = Math.round(baseH * scaleMult);
+
+        // Offscreen container to render +1 zoom level tiles
+        hiddenContainer = document.createElement('div');
+        hiddenContainer.style.position = 'fixed';
+        hiddenContainer.style.left = '-99999px';
+        hiddenContainer.style.top = '0';
+        hiddenContainer.style.width = `${exportW}px`;
+        hiddenContainer.style.height = `${exportH}px`;
+        hiddenContainer.style.opacity = '0';
+        hiddenContainer.style.pointerEvents = 'none';
+        document.body.appendChild(hiddenContainer);
+
+        exportMap = new maplibregl.Map({
+          container: hiddenContainer,
+          preserveDrawingBuffer: true,
+          center: map.getCenter(),
+          zoom: targetZoom,
+          bearing: map.getBearing(),
+          pitch: map.getPitch(),
+          style: {
+            version: 8,
+            sources: {
+              'custom-tiles': {
+                type: 'raster',
+                tiles: ['./tiles/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                minzoom: 13,
+                maxzoom: 19,
+                attribution: 'MapData : OpenStreetMap'
+              }
+            },
+            layers: [
+              {
+                id: 'custom-tiles-layer',
+                type: 'raster',
+                source: 'custom-tiles',
+                minzoom: 13,
+                maxzoom: 19
+              }
+            ]
+          }
+        });
+
+        // Wait for all +1 zoom tiles to finish loading (with timeout fallback)
+        await Promise.race([
+          new Promise(resolve => exportMap.once('idle', resolve)),
+          new Promise(resolve => setTimeout(resolve, 8000))
+        ]);
+
+        btn.textContent = '300dpi PDF生成中...';
+
         // A3 Landscape at 300 DPI: 420mm x 297mm
-        // 1 mm = 300 / 25.4 = 11.8110236 px
-        const dpmm = 300 / 25.4;
+        const dpmm = 300 / 25.4; // ~11.811 px/mm
         const pageW = Math.round(420 * dpmm); // 4961 px
         const pageH = Math.round(297 * dpmm); // 3508 px
         const margin = Math.round(5 * dpmm);  // 59 px (5mm margin)
@@ -398,7 +461,7 @@
         ctx.fillRect(0, 0, pageW, pageH);
 
         // 2. Draw Map Canvas in content area
-        const mapCanvas = map.getCanvas();
+        const mapCanvas = (exportMap && exportMap.getCanvas()) ? exportMap.getCanvas() : map.getCanvas();
         const contentX = margin;
         const contentY = margin;
         const contentW = pageW - margin * 2; // 4843 px
@@ -600,6 +663,12 @@
         console.error(err);
         alert('PDF生成中にエラーが発生しました: ' + err.message);
       } finally {
+        if (exportMap) {
+          try { exportMap.remove(); } catch(e) {}
+        }
+        if (hiddenContainer && hiddenContainer.parentNode) {
+          hiddenContainer.parentNode.removeChild(hiddenContainer);
+        }
         btn.disabled = false;
         btn.innerHTML = `
           <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
