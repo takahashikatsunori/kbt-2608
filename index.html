@@ -354,6 +354,7 @@
       container: 'map',
       minZoom: 13,
       maxZoom: 18,
+      attributionControl: false,
       style: {
         version: 8,
         sources: {
@@ -363,7 +364,7 @@
             tileSize: 256,
             minzoom: 13,
             maxzoom: 18,
-            attribution: 'MapData : OpenStreetMap'
+            attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy;OpenStreetMap contributors (ODbL)</a>  ; <a href="https://maplibre.org" target="_blank">MapLibre</a>'
           }
         },
         layers: [
@@ -378,6 +379,11 @@
       center: [139.475, 35.726],
       zoom: 16
     });
+
+    // クレジット (Attribution) コントローラー
+    map.addControl(new maplibregl.AttributionControl({
+      customAttribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy;OpenStreetMap contributors (ODbL)</a>  ; <a href="https://maplibre.org" target="_blank">MapLibre</a>'
+    }), 'bottom-right');
 
     // ズーム・コンパス コントローラー
     map.addControl(new maplibregl.NavigationControl({
