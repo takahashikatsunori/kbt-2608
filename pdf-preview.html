@@ -147,6 +147,140 @@
       padding: 16px;
       box-sizing: border-box;
       min-width: 0;
+      position: relative;
+    }
+
+    /* Floating Tablet-Friendly Vertical Zoom Slider */
+    .zoom-slider-panel {
+      position: absolute;
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 500;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1.5px solid #ede7db;
+      border-radius: 28px;
+      box-shadow: 0 8px 24px rgba(180, 160, 130, 0.22), 0 2px 6px rgba(0, 0, 0, 0.04);
+      padding: 10px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .zoom-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 2px 5px;
+      min-width: 32px;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    .zoom-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      padding: 0;
+      outline: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .zoom-btn:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      transform: scale(1.06);
+      box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3);
+    }
+    .zoom-btn:active {
+      transform: scale(0.94);
+    }
+
+    .zoom-track-wrapper {
+      padding: 14px 0;
+      position: relative;
+      cursor: pointer;
+      touch-action: none;
+      display: flex;
+      justify-content: center;
+    }
+
+    .zoom-track-container {
+      width: 38px;
+      height: 160px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+
+    .zoom-track-bar {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+
+    .zoom-track-fill {
+      position: absolute;
+      bottom: 0;
+      width: 8px;
+      height: 50%;
+      background: linear-gradient(180deg, #3b82f6, #2563eb);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .zoom-thumb {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform: translate(-50%, 50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 3.5px solid #2563eb;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.4), 0 1px 3px rgba(0, 0, 0, 0.12);
+      cursor: grab;
+      pointer-events: none;
+      transition: transform 0.1s ease;
+      box-sizing: border-box;
+    }
+    .zoom-thumb::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #2563eb;
+    }
+    .zoom-track-wrapper:active .zoom-thumb {
+      transform: translate(-50%, 50%) scale(1.15);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
     }
 
     /* Outer A3 Landscape Page Frame (420mm x 297mm) */
@@ -345,7 +479,7 @@
 
     /* Screen Side-by-Side QR Panel (Right Sidebar, NOT overlapping map) */
     .qr-sidebar {
-      width: 240px;
+      width: 320px;
       height: 100%;
       background: #ffffff;
       border-left: 1px solid #ede7db;
@@ -362,7 +496,7 @@
       align-items: center;
       padding: 14px 16px;
       border-bottom: 1px solid #ede7db;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 700;
       color: #2563eb;
     }
@@ -370,10 +504,10 @@
       background: transparent;
       border: none;
       color: #94a3b8;
-      font-size: 16px;
+      font-size: 18px;
       cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 4px 8px;
+      border-radius: 6px;
       line-height: 1;
     }
     .qr-sidebar-close:hover {
@@ -381,46 +515,48 @@
       background: #f1f5f9;
     }
     .qr-sidebar-body {
-      padding: 16px;
+      padding: 18px 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       overflow-y: auto;
       box-sizing: border-box;
     }
     .screen-qr-box {
       background: #fbf9f4;
       border: 1px solid #ede7db;
-      padding: 8px;
-      border-radius: 12px;
+      padding: 12px;
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 140px;
-      height: 140px;
+      width: 272px;
+      height: 272px;
       box-sizing: border-box;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(180, 160, 130, 0.12);
+      box-shadow: 0 4px 14px rgba(180, 160, 130, 0.16);
     }
     .screen-qr-box canvas, .screen-qr-box img {
-      width: 124px !important;
-      height: 124px !important;
+      width: 248px !important;
+      height: 248px !important;
       display: block;
     }
     .screen-qr-desc {
-      font-size: 11px;
+      font-size: 12px;
       color: #64748b;
       text-align: center;
-      line-height: 1.4;
+      line-height: 1.45;
+      max-width: 272px;
     }
     .screen-qr-url-input {
       width: 100%;
+      max-width: 272px;
       background: #fbf9f4;
       border: 1px solid #ede7db;
       color: #475569;
-      font-size: 10px;
-      padding: 6px 8px;
+      font-size: 11px;
+      padding: 8px 10px;
       border-radius: 6px;
       box-sizing: border-box;
     }
@@ -436,7 +572,7 @@
         background: none;
         overflow: hidden;
       }
-      .toolbar, .qr-sidebar {
+      .toolbar, .qr-sidebar, .zoom-slider-panel {
         display: none !important;
       }
       .main-container {
@@ -497,6 +633,24 @@
   <div class="main-container">
     <!-- Map Preview Area -->
     <div class="preview-wrapper">
+      <!-- Floating Tablet-Friendly Vertical Zoom Slider -->
+      <div class="zoom-slider-panel" id="zoom-slider-panel" title="ズーム操作スライダー">
+        <div class="zoom-badge" id="zoom-badge">16.0</div>
+        <button class="zoom-btn" onclick="zoomInStep()" title="拡大 (+)" aria-label="ズームイン">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <div class="zoom-track-wrapper" id="zoom-track-wrapper">
+          <div class="zoom-track-container" id="zoom-track-container">
+            <div class="zoom-track-bar"></div>
+            <div class="zoom-track-fill" id="zoom-track-fill"></div>
+            <div class="zoom-thumb" id="zoom-thumb"></div>
+          </div>
+        </div>
+        <button class="zoom-btn" onclick="zoomOutStep()" title="縮小 (−)" aria-label="ズームアウト">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+      </div>
+
       <div class="page-frame" id="page-frame">
         <div class="map-container">
           <div id="map"></div>
@@ -691,8 +845,8 @@
 
       screenQRCode = new QRCode(screenQREl, {
         text: url,
-        width: 124,
-        height: 124,
+        width: 248,
+        height: 248,
         colorDark: '#0f172a',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
@@ -789,10 +943,82 @@
 
     map.on('load', () => {
       initQRCodes();
+      updateZoomSliderUI(map.getZoom());
     });
     setTimeout(() => {
       initQRCodes();
+      updateZoomSliderUI(map.getZoom());
     }, 200);
+
+    // Tablet-Friendly Vertical Zoom Slider Controller
+    const zoomTrackWrapper = document.getElementById('zoom-track-wrapper');
+    const zoomTrack = document.getElementById('zoom-track-container');
+    const zoomThumb = document.getElementById('zoom-thumb');
+    const zoomFill = document.getElementById('zoom-track-fill');
+    const zoomBadge = document.getElementById('zoom-badge');
+    const MIN_ZOOM = 13.0;
+    const MAX_ZOOM = 19.0;
+    let isDraggingZoom = false;
+
+    function updateZoomSliderUI(zoom) {
+      if (!zoomTrack || !zoomThumb || !zoomFill || !zoomBadge) return;
+      const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+      const fraction = (clamped - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM);
+      const trackH = zoomTrack.clientHeight || 160;
+      const bottomPx = fraction * trackH;
+
+      zoomThumb.style.bottom = `${bottomPx}px`;
+      zoomFill.style.height = `${bottomPx}px`;
+      zoomBadge.textContent = clamped.toFixed(1);
+    }
+
+    function handleZoomPointer(e) {
+      if (!zoomTrack) return;
+      const rect = zoomTrack.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      let fraction = 1 - (y / rect.height);
+      fraction = Math.max(0, Math.min(1, fraction));
+      const newZoom = MIN_ZOOM + fraction * (MAX_ZOOM - MIN_ZOOM);
+      map.setZoom(newZoom);
+      updateZoomSliderUI(newZoom);
+    }
+
+    if (zoomTrackWrapper) {
+      zoomTrackWrapper.addEventListener('pointerdown', (e) => {
+        isDraggingZoom = true;
+        zoomTrackWrapper.setPointerCapture(e.pointerId);
+        handleZoomPointer(e);
+      });
+      zoomTrackWrapper.addEventListener('pointermove', (e) => {
+        if (isDraggingZoom) {
+          handleZoomPointer(e);
+        }
+      });
+      const stopZoomDrag = (e) => {
+        if (isDraggingZoom) {
+          isDraggingZoom = false;
+          try { zoomTrackWrapper.releasePointerCapture(e.pointerId); } catch(err) {}
+        }
+      };
+      zoomTrackWrapper.addEventListener('pointerup', stopZoomDrag);
+      zoomTrackWrapper.addEventListener('pointercancel', stopZoomDrag);
+    }
+
+    function zoomInStep() {
+      const current = map.getZoom();
+      map.zoomTo(Math.min(MAX_ZOOM, current + 0.5), { duration: 200 });
+    }
+
+    function zoomOutStep() {
+      const current = map.getZoom();
+      map.zoomTo(Math.max(MIN_ZOOM, current - 0.5), { duration: 200 });
+    }
+
+    map.on('zoom', () => {
+      if (!isDraggingZoom) {
+        updateZoomSliderUI(map.getZoom());
+      }
+    });
 
     // High-Resolution 2D Canvas Compositor with +1 Zoom Level Tiles (300 DPI)
     async function downloadPDF() {
