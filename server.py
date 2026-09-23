@@ -39,6 +39,8 @@ class MapRequestHandler(http.server.SimpleHTTPRequestHandler):
             target_url = f"/pdf-download.html?lat={lat}&lng={lng}&zoom={zoom}&bearing={bearing}&pitch={pitch}"
             if qr in ['1', 'true']:
                 target_url += "&qr=1"
+            elif qr in ['2', 'large']:
+                target_url += "&qr=2"
             self.send_response(302)
             self.send_header('Location', target_url)
             self.end_headers()

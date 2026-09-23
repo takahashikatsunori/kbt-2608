@@ -336,11 +336,11 @@
       display: block;
     }
 
-    /* Top-Right: High-Visibility Compass Needle */
+    /* Top-Right: High-Visibility Compass Needle (Moved 5mm up & 5mm right to 3mm) */
     .overlay-top-right {
       position: absolute;
-      top: 8mm;
-      right: 8mm;
+      top: 3mm;
+      right: 3mm;
       z-index: 10;
       display: flex;
       flex-direction: column;
@@ -365,7 +365,7 @@
       transition: transform 0.1s linear;
     }
 
-    /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit + 2cm QR */
+    /* Bottom-Right: Legend (6cm) + Notice (6cm) + Credit + 2cm/4cm QR */
     .overlay-bottom-right {
       position: absolute;
       bottom: 2mm;
@@ -395,7 +395,7 @@
       line-height: 1.2;
     }
 
-    /* 2cm x 2cm Map QR Code (Directly above Legend) */
+    /* 2cm x 2cm / 4cm x 4cm Map QR Code (Directly above Legend) */
     .overlay-map-qr {
       width: 2cm;
       height: 2cm;
@@ -409,6 +409,7 @@
       align-items: center;
       justify-content: center;
       border-radius: 2px;
+      transition: width 0.2s ease, height 0.2s ease;
     }
     .overlay-map-qr-code {
       width: 15mm !important;
@@ -430,6 +431,25 @@
       line-height: 1;
       margin-top: 1mm;
       text-align: center;
+    }
+    /* 2倍 (4cm x 4cm) QRスタイル */
+    .overlay-map-qr.size-large {
+      width: 4cm;
+      height: 4cm;
+      padding: 2.5mm;
+    }
+    .overlay-map-qr.size-large .overlay-map-qr-code {
+      width: 30mm !important;
+      height: 30mm !important;
+    }
+    .overlay-map-qr.size-large .overlay-map-qr-code canvas,
+    .overlay-map-qr.size-large .overlay-map-qr-code img {
+      width: 30mm !important;
+      height: 30mm !important;
+    }
+    .overlay-map-qr.size-large .overlay-map-qr-label {
+      font-size: 8pt;
+      margin-top: 1.5mm;
     }
 
     .legend-image {
@@ -605,11 +625,17 @@
       <span class="toolbar-desc">ドラッグで移動、右ドラッグ / Ctrl+ドラッグで回転・傾き調整</span>
     </div>
     <div class="toolbar-actions">
-      <!-- Toggle 1: PDF Map QR Print (Default: OFF) -->
-      <label class="toggle-label" title="出力するPDFの凡例右上に2cm角のQRコードを印刷します">
-        <input type="checkbox" id="toggle-map-qr" onchange="toggleMapQR(this.checked)" />
-        <span>地図にQR印字</span>
-      </label>
+      <!-- Toggle 1: PDF Map QR Print & Size (Default: OFF, Size: 1) -->
+      <div class="qr-print-group" style="display:inline-flex; align-items:center; gap:6px; background:#fbf9f4; border:1px solid #ede7db; border-radius:8px; padding:4px 8px;">
+        <label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:#475569; cursor:pointer;" title="出力するPDFの凡例右上にQRコードを印刷します">
+          <input type="checkbox" id="toggle-map-qr" onchange="toggleMapQR(this.checked)" style="cursor:pointer; width:15px; height:15px; accent-color:#2563eb; margin:0;" />
+          <span>地図にQR印字</span>
+        </label>
+        <select id="map-qr-size" onchange="changeMapQRSize(this.value)" style="font-size:11px; font-weight:600; color:#475569; border:1px solid #cbd5e1; border-radius:6px; padding:2px 4px; background:#ffffff; cursor:pointer; outline:none;" title="QRコード印刷サイズを選択">
+          <option value="1">標準 (2cm)</option>
+          <option value="2">大 (4cm・2倍)</option>
+        </select>
+      </div>
 
       <!-- Toggle 2: Screen Side-by-Side QR Panel (Default: OFF) -->
       <label class="toggle-label" title="画面横にスマホ共有用QRパネルを横並びで表示します（地図と重なりません）">
@@ -721,8 +747,10 @@
     const initialPitch = urlParams.has('pitch') ? parseFloat(urlParams.get('pitch')) : 0;
     const autoDownload = urlParams.get('download') === '1' || urlParams.get('download') === 'true';
 
-    // Setting 1: Map PDF QR Code Print (Default: OFF)
-    let isMapQREnabled = urlParams.get('qr') === '1' || urlParams.get('qr') === 'true';
+    // Setting 1: Map PDF QR Code Print (Default: OFF) & Size (1 = 2cm, 2 = 4cm)
+    const qrParam = urlParams.get('qr');
+    let isMapQREnabled = qrParam === '1' || qrParam === '2' || qrParam === 'true';
+    let mapQRSize = qrParam === '2' ? 2 : 1;
 
     // Setting 2: Screen Side-by-Side QR Panel (Default: OFF)
     let isScreenQROpen = false;
@@ -822,7 +850,7 @@
       downloadUrl.searchParams.set('bearing', bearing);
       downloadUrl.searchParams.set('pitch', pitch);
       if (isMapQREnabled) {
-        downloadUrl.searchParams.set('qr', '1');
+        downloadUrl.searchParams.set('qr', mapQRSize.toString());
       }
       return downloadUrl.href;
     }
@@ -852,10 +880,11 @@
         correctLevel: QRCode.CorrectLevel.M
       });
 
+      // High-resolution for map QR code so it scales nicely for both 2cm and 4cm
       mapQRCode = new QRCode(mapQREl, {
         text: url,
-        width: 180,
-        height: 180,
+        width: 360,
+        height: 360,
         colorDark: '#0f172a',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
@@ -893,12 +922,30 @@
       });
     }
 
-    // Setting 1: Toggle Map PDF QR Print (Independent)
+    // Setting 1: Toggle Map PDF QR Print & Size (Independent)
     function toggleMapQR(enabled) {
       isMapQREnabled = enabled;
       const mapQREl = document.getElementById('overlay-map-qr');
       if (mapQREl) {
         mapQREl.style.display = enabled ? 'flex' : 'none';
+      }
+      const sizeSelect = document.getElementById('map-qr-size');
+      if (sizeSelect) {
+        sizeSelect.disabled = !enabled;
+        sizeSelect.style.opacity = enabled ? '1' : '0.5';
+      }
+      updateQRCodes();
+    }
+
+    function changeMapQRSize(size) {
+      mapQRSize = parseInt(size, 10) || 1;
+      const mapQREl = document.getElementById('overlay-map-qr');
+      if (mapQREl) {
+        if (mapQRSize === 2) {
+          mapQREl.classList.add('size-large');
+        } else {
+          mapQREl.classList.remove('size-large');
+        }
       }
       updateQRCodes();
     }
@@ -919,11 +966,16 @@
       }
     }
 
-    // Initialize toggle checkboxes
+    // Initialize toggle controls
     const mapQrCheckbox = document.getElementById('toggle-map-qr');
     if (mapQrCheckbox) {
       mapQrCheckbox.checked = isMapQREnabled;
       toggleMapQR(isMapQREnabled);
+    }
+    const mapQrSizeSelect = document.getElementById('map-qr-size');
+    if (mapQrSizeSelect) {
+      mapQrSizeSelect.value = mapQRSize.toString();
+      changeMapQRSize(mapQRSize);
     }
 
     const screenQrCheckbox = document.getElementById('toggle-screen-qr');
@@ -1131,9 +1183,9 @@
           ctx.restore();
         }
 
-        // 4. Draw Compass (top: 8mm, right: 8mm)
+        // 4. Draw Compass (top: 3mm, right: 3mm - moved 5mm up & 5mm right)
         const compassR = Math.round(32 * (300 / 96)); // ~100px radius
-        const compassPad = Math.round(8 * dpmm);
+        const compassPad = Math.round(3 * dpmm);
         const compassCenterX = contentX + contentW - compassPad - compassR;
         const compassCenterY = contentY + compassPad + compassR;
 
@@ -1285,9 +1337,10 @@
         ctx.fillText('凡例', legendX + titleBadgeW / 2, titleBadgeY + titleBadgeH / 2);
         ctx.restore();
 
-        // Draw 2cm x 2cm QR Code on map (ONLY if isMapQREnabled is true)
+        // Draw 2cm or 4cm QR Code on map (ONLY if isMapQREnabled is true)
         if (isMapQREnabled) {
-          const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
+          const qrScale = mapQRSize === 2 ? 2 : 1;
+          const qrSize = Math.round(20 * qrScale * dpmm); // 236 px (2cm) or 472 px (4cm)
           const qrGap = 12;
           const qrX = legendX + legendW - qrSize;
           const qrY = legendY - qrSize - qrGap;
@@ -1295,25 +1348,36 @@
           // Draw QR box background & border
           ctx.save();
           ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-          ctx.shadowBlur = 12;
-          ctx.shadowOffsetY = 4;
+          ctx.shadowBlur = Math.round(12 * qrScale);
+          ctx.shadowOffsetY = Math.round(4 * qrScale);
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(qrX, qrY, qrSize, qrSize);
           ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = Math.round(2 * qrScale);
           ctx.strokeRect(qrX, qrY, qrSize, qrSize);
 
           // Draw QR Code
           const mapQRElem = document.querySelector('#map-qr-code canvas') || document.querySelector('#map-qr-code img');
+          const padSide = Math.round(10 * qrScale);
+          const padBottomExtra = Math.round(10 * qrScale);
+          const labelFontSize = Math.round(16 * qrScale);
+          const labelOffsetBottom = Math.round(4 * qrScale);
+
           if (mapQRElem) {
-            ctx.drawImage(mapQRElem, qrX + 10, qrY + 10, qrSize - 20, qrSize - 30);
+            ctx.drawImage(
+              mapQRElem,
+              qrX + padSide,
+              qrY + padSide,
+              qrSize - (padSide * 2),
+              qrSize - padSide - padBottomExtra - labelFontSize
+            );
           }
           // Label
-          ctx.font = 'bold 16px sans-serif';
+          ctx.font = `bold ${labelFontSize}px sans-serif`;
           ctx.fillStyle = '#334155';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText('PDF取得', qrX + qrSize / 2, qrY + qrSize - 4);
+          ctx.fillText('PDF取得', qrX + qrSize / 2, qrY + qrSize - labelOffsetBottom);
           ctx.restore();
         }
 

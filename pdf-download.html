@@ -261,11 +261,11 @@
     </div>
 
     <div class="actions">
-      <button id="close-btn" class="btn btn-secondary" onclick="closePage()" disabled>
-        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+      <button id="close-btn" class="btn btn-secondary" onclick="handleCloseClick()">
+        <svg id="close-btn-icon" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
           <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
         </svg>
-        ページを閉じる
+        <span id="close-btn-text">中止して閉じる</span>
       </button>
 
       <a id="download-link" class="btn btn-primary" href="#" style="display:none;" download="小平市防災タウンマップ.pdf">
@@ -292,7 +292,29 @@
     const targetZoom = parseFloat(urlParams.get('zoom')) || 15.5;
     const targetBearing = parseFloat(urlParams.get('bearing')) || 0;
     const targetPitch = parseFloat(urlParams.get('pitch')) || 0;
-    const isMapQREnabled = urlParams.get('qr') === '1' || urlParams.get('qr') === 'true';
+    const qrParam = urlParams.get('qr');
+    const isMapQREnabled = qrParam === '1' || qrParam === '2' || qrParam === 'true';
+    const qrScale = qrParam === '2' ? 2 : 1;
+
+    let isProcessing = true;
+    let isCancelled = false;
+    let exportMapInstance = null;
+
+    function handleCloseClick() {
+      if (isProcessing && !isCancelled) {
+        // 処理中に中断
+        isCancelled = true;
+        isProcessing = false;
+        updateStatus('処理を中止しました', '画面を閉じてください', 0, 'error');
+        if (exportMapInstance) {
+          try { exportMapInstance.remove(); } catch(e) {}
+          exportMapInstance = null;
+        }
+        const closeBtnText = document.getElementById('close-btn-text');
+        if (closeBtnText) closeBtnText.textContent = '閉じる';
+      }
+      closePage();
+    }
 
     function closePage() {
       window.close();
@@ -360,11 +382,13 @@
       let hiddenContainer = document.getElementById('hidden-container');
 
       try {
+        if (isCancelled) return;
         updateStatus('画像リソースを準備中...', 'タイトル・凡例画像をロードしています', 20);
         const [titleImg, legendImg] = await Promise.all([
           loadImage('./img/title.png'),
           loadImage('./img/legend.png')
         ]);
+        if (isCancelled) return;
 
         updateStatus('高解像度タイルを取得中...', '+1段階ズームの高精細地図を描画しています', 40);
 
@@ -411,12 +435,14 @@
             ]
           }
         });
+        exportMapInstance = exportMap;
 
         // Wait for tiles to finish loading
         await Promise.race([
           new Promise(resolve => exportMap.once('idle', resolve)),
           new Promise(resolve => setTimeout(resolve, 8000))
         ]);
+        if (isCancelled) return;
 
         updateStatus('300dpi PDFを合成中...', 'A3用紙サイズに高精細レンダリングを行っています', 75);
 
@@ -467,9 +493,9 @@
           ctx.restore();
         }
 
-        // 6. Draw Compass (top: 8mm, right: 8mm)
+        // 6. Draw Compass (top: 3mm, right: 3mm - moved 5mm up & 5mm right)
         const compassR = Math.round(32 * (300 / 96)); // ~100px radius
-        const compassPad = Math.round(8 * dpmm);
+        const compassPad = Math.round(3 * dpmm);
         const compassCenterX = contentX + contentW - compassPad - compassR;
         const compassCenterY = contentY + compassPad + compassR;
 
@@ -616,21 +642,21 @@
         ctx.fillText('凡例', legendX + titleBadgeW / 2, titleBadgeY + titleBadgeH / 2);
         ctx.restore();
 
-        // Draw 2cm x 2cm QR Code on map if enabled
+        // Draw 2cm or 4cm QR Code on map if enabled
         if (isMapQREnabled) {
-          const qrSize = Math.round(20 * dpmm); // 236 px (2cm)
+          const qrSize = Math.round(20 * qrScale * dpmm); // 236 px (2cm) or 472 px (4cm)
           const qrGap = 12;
           const qrX = legendX + legendW - qrSize;
           const qrY = legendY - qrSize - qrGap;
 
           ctx.save();
           ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-          ctx.shadowBlur = 12;
-          ctx.shadowOffsetY = 4;
+          ctx.shadowBlur = Math.round(12 * qrScale);
+          ctx.shadowOffsetY = Math.round(4 * qrScale);
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(qrX, qrY, qrSize, qrSize);
           ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = Math.round(2 * qrScale);
           ctx.strokeRect(qrX, qrY, qrSize, qrSize);
 
           // Generate QR code offscreen
@@ -639,25 +665,38 @@
           const downloadUrl = window.location.href;
           new QRCode(qrContainer, {
             text: downloadUrl,
-            width: 180,
-            height: 180,
+            width: 360,
+            height: 360,
             colorDark: '#0f172a',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
           });
 
           const qrCanvas = qrContainer.querySelector('canvas') || qrContainer.querySelector('img');
+          const padSide = Math.round(10 * qrScale);
+          const padBottomExtra = Math.round(10 * qrScale);
+          const labelFontSize = Math.round(16 * qrScale);
+          const labelOffsetBottom = Math.round(4 * qrScale);
+
           if (qrCanvas) {
-            ctx.drawImage(qrCanvas, qrX + 10, qrY + 10, qrSize - 20, qrSize - 30);
+            ctx.drawImage(
+              qrCanvas,
+              qrX + padSide,
+              qrY + padSide,
+              qrSize - (padSide * 2),
+              qrSize - padSide - padBottomExtra - labelFontSize
+            );
           }
 
-          ctx.font = 'bold 16px sans-serif';
+          ctx.font = `bold ${labelFontSize}px sans-serif`;
           ctx.fillStyle = '#334155';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText('PDF取得', qrX + qrSize / 2, qrY + qrSize - 4);
+          ctx.fillText('PDF取得', qrX + qrSize / 2, qrY + qrSize - labelOffsetBottom);
           ctx.restore();
         }
+
+        if (isCancelled) return;
 
         // Draw Legend Image
         if (legendImg && legendImg.naturalWidth > 0) {
@@ -719,6 +758,8 @@
         ctx.fillText(disclaimerText, disclaimerX, disclaimerY);
         ctx.restore();
 
+        if (isCancelled) return;
+
         // Convert to jsPDF
         updateStatus('PDFをダウンロード中...', '端末へファイルを送信しています', 95);
 
@@ -732,6 +773,8 @@
 
         pdf.addImage(imgData, 'JPEG', 0, 0, 420, 297);
 
+        if (isCancelled) return;
+
         // Generate Blob for direct download link & mobile Safari compatibility
         const pdfBlob = pdf.output('blob');
         const pdfUrl = URL.createObjectURL(pdfBlob);
@@ -743,19 +786,23 @@
         // Trigger automatic download
         pdf.save('小平市防災タウンマップ.pdf');
 
-        const closeBtn = document.getElementById('close-btn');
-        if (closeBtn) closeBtn.disabled = false;
+        isProcessing = false;
+        const closeBtnText = document.getElementById('close-btn-text');
+        if (closeBtnText) closeBtnText.textContent = 'ページを閉じる';
 
         updateStatus('ダウンロードを開始しました！', '', 100, 'done');
       } catch (err) {
+        if (isCancelled) return;
         console.error(err);
-        const closeBtn = document.getElementById('close-btn');
-        if (closeBtn) closeBtn.disabled = false;
+        isProcessing = false;
+        const closeBtnText = document.getElementById('close-btn-text');
+        if (closeBtnText) closeBtnText.textContent = '閉じる';
         updateStatus('PDF作成中にエラーが発生しました', err.message, 100, 'error');
       } finally {
         if (exportMap) {
           try { exportMap.remove(); } catch(e) {}
         }
+        exportMapInstance = null;
       }
     }
 
