@@ -153,9 +153,9 @@
     /* Floating Tablet-Friendly Vertical Zoom Slider */
     .zoom-slider-panel {
       position: absolute;
-      left: 24px;
-      top: 50%;
-      transform: translateY(-50%);
+      left: 20px;
+      top: 16px;
+      bottom: 16px;
       z-index: 500;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(8px);
@@ -163,11 +163,12 @@
       border: 1.5px solid #ede7db;
       border-radius: 28px;
       box-shadow: 0 8px 24px rgba(180, 160, 130, 0.22), 0 2px 6px rgba(0, 0, 0, 0.04);
-      padding: 10px 6px;
+      padding: 12px 6px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
@@ -184,6 +185,7 @@
       min-width: 32px;
       text-align: center;
       line-height: 1.2;
+      flex-shrink: 0;
     }
 
     .zoom-btn {
@@ -202,6 +204,7 @@
       padding: 0;
       outline: none;
       -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
     }
     .zoom-btn:hover {
       background: #2563eb;
@@ -221,11 +224,15 @@
       touch-action: none;
       display: flex;
       justify-content: center;
+      flex: 1;
+      min-height: 80px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .zoom-track-container {
       width: 38px;
-      height: 160px;
+      height: 100%;
       position: relative;
       display: flex;
       justify-content: center;
@@ -637,9 +644,9 @@
         </select>
       </div>
 
-      <!-- Toggle 2: Screen Side-by-Side QR Panel (Default: OFF) -->
+      <!-- Toggle 2: Screen Side-by-Side QR Panel (Default: ON) -->
       <label class="toggle-label" title="画面横にスマホ共有用QRパネルを横並びで表示します（地図と重なりません）">
-        <input type="checkbox" id="toggle-screen-qr" onchange="toggleScreenQR(this.checked)" />
+        <input type="checkbox" id="toggle-screen-qr" checked onchange="toggleScreenQR(this.checked)" />
         <span>共有QRパネル</span>
       </label>
 
@@ -661,7 +668,7 @@
     <div class="preview-wrapper">
       <!-- Floating Tablet-Friendly Vertical Zoom Slider -->
       <div class="zoom-slider-panel" id="zoom-slider-panel" title="ズーム操作スライダー">
-        <div class="zoom-badge" id="zoom-badge">16.0</div>
+        <div class="zoom-badge" id="zoom-badge">16.5</div>
         <button class="zoom-btn" onclick="zoomInStep()" title="拡大 (+)" aria-label="ズームイン">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
@@ -722,8 +729,8 @@
       </div>
     </div>
 
-    <!-- Side-by-Side QR Panel (Default: Hidden, Side-by-Side with Map) -->
-    <div class="qr-sidebar" id="qr-sidebar" style="display: none;">
+    <!-- Side-by-Side QR Panel (Default: Visible, Side-by-Side with Map) -->
+    <div class="qr-sidebar" id="qr-sidebar">
       <div class="qr-sidebar-header">
         <span>📱 スマホ取得・共有QR</span>
         <button class="qr-sidebar-close" onclick="toggleScreenQR(false)" title="閉じる">✕</button>
@@ -742,7 +749,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const initialLat = urlParams.has('lat') ? parseFloat(urlParams.get('lat')) : 35.726;
     const initialLng = urlParams.has('lng') ? parseFloat(urlParams.get('lng')) : 139.475;
-    const initialZoom = urlParams.has('zoom') ? parseFloat(urlParams.get('zoom')) : 16;
+    const initialZoom = urlParams.has('zoom') ? parseFloat(urlParams.get('zoom')) : 16.5;
     const initialBearing = urlParams.has('bearing') ? parseFloat(urlParams.get('bearing')) : 0;
     const initialPitch = urlParams.has('pitch') ? parseFloat(urlParams.get('pitch')) : 0;
     const autoDownload = urlParams.get('download') === '1' || urlParams.get('download') === 'true';
@@ -752,8 +759,8 @@
     let isMapQREnabled = qrParam === '1' || qrParam === '2' || qrParam === 'true';
     let mapQRSize = qrParam === '2' ? 2 : 1;
 
-    // Setting 2: Screen Side-by-Side QR Panel (Default: OFF)
-    let isScreenQROpen = false;
+    // Setting 2: Screen Side-by-Side QR Panel (Default: ON)
+    let isScreenQROpen = true;
 
     const map = new maplibregl.Map({
       container: 'map',
@@ -761,6 +768,8 @@
       pitchWithRotate: true,
       dragRotate: true,
       touchPitch: true,
+      minZoom: 13,
+      maxZoom: 19,
       style: {
         version: 8,
         sources: {
@@ -769,7 +778,7 @@
             tiles: ['./tiles/{z}/{x}/{y}.png'],
             tileSize: 256,
             minzoom: 13,
-            maxzoom: 19,
+            maxzoom: 18,
             attribution: 'MapData : OpenStreetMap'
           }
         },
@@ -778,8 +787,7 @@
             id: 'custom-tiles-layer',
             type: 'raster',
             source: 'custom-tiles',
-            minzoom: 13,
-            maxzoom: 19
+            minzoom: 13
           }
         ]
       },
@@ -828,6 +836,9 @@
 
       frame.style.transform = `scale(${scale})`;
       map.resize();
+      if (typeof updateZoomSliderUI === 'function') {
+        updateZoomSliderUI(map.getZoom());
+      }
     }
 
     window.addEventListener('resize', fitPreviewToWindow);
@@ -1107,6 +1118,8 @@
         exportMap = new maplibregl.Map({
           container: hiddenContainer,
           preserveDrawingBuffer: true,
+          minZoom: 13,
+          maxZoom: 19,
           center: map.getCenter(),
           zoom: targetZoom,
           bearing: map.getBearing(),
@@ -1119,7 +1132,7 @@
                 tiles: ['./tiles/{z}/{x}/{y}.png'],
                 tileSize: 256,
                 minzoom: 13,
-                maxzoom: 19,
+                maxzoom: 18,
                 attribution: 'MapData : OpenStreetMap'
               }
             },
@@ -1128,8 +1141,7 @@
                 id: 'custom-tiles-layer',
                 type: 'raster',
                 source: 'custom-tiles',
-                minzoom: 13,
-                maxzoom: 19
+                minzoom: 13
               }
             ]
           }

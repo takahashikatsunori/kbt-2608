@@ -408,6 +408,8 @@
         exportMap = new maplibregl.Map({
           container: hiddenContainer,
           preserveDrawingBuffer: true,
+          minZoom: 13,
+          maxZoom: 19,
           center: [targetLng, targetLat],
           zoom: renderZoom,
           bearing: targetBearing,
@@ -420,7 +422,7 @@
                 tiles: ['./tiles/{z}/{x}/{y}.png'],
                 tileSize: 256,
                 minzoom: 13,
-                maxzoom: 19,
+                maxzoom: 18,
                 attribution: 'MapData : OpenStreetMap'
               }
             },
@@ -429,8 +431,7 @@
                 id: 'custom-tiles-layer',
                 type: 'raster',
                 source: 'custom-tiles',
-                minzoom: 13,
-                maxzoom: 19
+                minzoom: 13
               }
             ]
           }
