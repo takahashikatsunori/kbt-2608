@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>小平市防災タウンマップ - イベント体験ページ</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="anonymous" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Hiragino Maru Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #fefcf3;
+      color: #3d2b1f;
+    }
+
+    /* =========================================================
+       ① タイトル ＆ 一時避難場所（小中学校）選択画面
+       ========================================================= */
+    #screen-select {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      flex-direction: row;
+      background:
+        radial-gradient(#e9e2ce 1.5px, transparent 1.5px),
+        linear-gradient(135deg, #fffdf6 0%, #f5f9ec 100%);
+      background-size: 26px 26px, 100% 100%;
+      overflow: hidden;
+      transition: opacity 0.25s ease;
+    }
+
+    #screen-select.hidden {
+      display: none !important;
+    }
+
+    /* 左カラム：表紙画像とわかりやすい説明 */
+    .intro-sidebar {
+      width: 380px;
+      max-width: 34vw;
+      height: 100%;
+      background: linear-gradient(180deg, #e7f4d3 0%, #fefcf3 45%, #fefcf3 100%);
+      border-right: 3px solid #d5e6be;
+      padding: 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 4px 0 20px rgba(102, 66, 29, 0.08);
+      flex-shrink: 0;
+      overflow-y: auto;
+    }
+
+    .cover-image-wrap {
+      width: 100%;
+      flex: 1;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .cover-image-wrap img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 20px;
+      box-shadow: 0 10px 28px rgba(102, 66, 29, 0.18);
+      border: 4px solid #ffffff;
+      background: #fffdf6;
+    }
+
+    .intro-guide-card {
+      width: 100%;
+      background: #ffffff;
+      border: 3px solid #f2851d;
+      border-radius: 20px;
+      padding: 14px 16px;
+      box-shadow: 0 6px 16px rgba(242, 133, 29, 0.15);
+      flex-shrink: 0;
+    }
+
+    .intro-guide-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #d96400;
+      text-align: center;
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      line-height: 1.3;
+    }
+
+    .intro-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .intro-step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff9f0;
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #4a3525;
+      line-height: 1.35;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #f2851d;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 5px rgba(242, 133, 29, 0.35);
+    }
+
+    /* 右メインエリア：学校選択リスト（画面を広く使う） */
+    .school-select-main {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 18px 24px 20px;
+      overflow: hidden;
+    }
+
+    .select-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      background: #ffffff;
+      padding: 14px 20px;
+      border-radius: 20px;
+      border: 3px solid #8ec360;
+      box-shadow: 0 6px 18px rgba(62, 125, 52, 0.12);
+      flex-shrink: 0;
+    }
+
+    .select-header-text h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      color: #2e6924;
+      line-height: 1.25;
+    }
+
+    .select-header-text p {
+      margin: 4px 0 0 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #6b5344;
+    }
+
+    /* 絞り込みボタン（大きく押しやすい影付きボタン） */
+    .filter-tabs {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .filter-tab-btn {
+      appearance: none;
+      border: 2px solid #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 10px 18px;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #cbd5e1, 0 6px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-tab-btn:hover {
+      transform: translateY(-1px);
+      background: #ffffff;
+    }
+
+    .filter-tab-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #cbd5e1;
+    }
+
+    .filter-tab-btn.active {
+      background: #3e7d34;
+      color: #ffffff;
+      border-color: #2a5c22;
+      box-shadow: 0 4px 0 #2a5c22, 0 6px 14px rgba(62, 125, 52, 0.3);
+    }
+
+    /* 学校グリッドスクロール領域 */
+    .school-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 6px 24px 2px;
+    }
+
+    .school-scroll-area::-webkit-scrollbar {
+      width: 12px;
+    }
+    .school-scroll-area::-webkit-scrollbar-track {
+      background: #f1ede2;
+      border-radius: 8px;
+    }
+    .school-scroll-area::-webkit-scrollbar-thumb {
+      background: #b7c9a3;
+      border-radius: 8px;
+      border: 2px solid #f1ede2;
+    }
+
+    .category-section {
+      margin-bottom: 20px;
+    }
+
+    .category-title {
+      font-size: 19px;
+      font-weight: 900;
+      margin: 0 0 12px 0;
+      padding: 8px 16px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .category-title.elem {
+      background: #fff0de;
+      color: #c25500;
+      border-left: 6px solid #f2851d;
+    }
+
+    .category-title.jr {
+      background: #e3f1fc;
+      color: #15589a;
+      border-left: 6px solid #2b80d4;
+    }
+
+    .school-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: 14px;
+    }
+
+    /* 学校選択ボタン（大きく・立体的・影付きで押しやすい） */
+    .school-btn {
+      appearance: none;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+      position: relative;
+    }
+
+    .school-btn.elem-btn {
+      border: 2.5px solid #f4a456;
+      box-shadow: 0 6px 0 #e08329, 0 8px 16px rgba(102, 66, 29, 0.12);
+    }
+
+    .school-btn.elem-btn:hover {
+      background: #fff9f2;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #e08329, 0 12px 20px rgba(242, 133, 29, 0.22);
+    }
+
+    .school-btn.elem-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #e08329, 0 3px 6px rgba(102, 66, 29, 0.15);
+    }
+
+    .school-btn.jr-btn {
+      border: 2.5px solid #67a9e8;
+      box-shadow: 0 6px 0 #317cc4, 0 8px 16px rgba(30, 80, 140, 0.12);
+    }
+
+    .school-btn.jr-btn:hover {
+      background: #f2f8ff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #317cc4, 0 12px 20px rgba(43, 128, 212, 0.22);
+    }
+
+    .school-btn.jr-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #317cc4, 0 3px 6px rgba(30, 80, 140, 0.15);
+    }
+
+    .school-badge {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 900;
+      color: #ffffff;
+      flex-shrink: 0;
+      text-align: center;
+      line-height: 1.15;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+    }
+
+    .elem-btn .school-badge {
+      background: linear-gradient(135deg, #f79b3e 0%, #ea730e 100%);
+    }
+
+    .jr-btn .school-badge {
+      background: linear-gradient(135deg, #4b97e2 0%, #226ebb 100%);
+    }
+
+    .school-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .school-name {
+      font-size: 18px;
+      font-weight: 900;
+      color: #2b2118;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .school-town {
+      font-size: 13px;
+      font-weight: 700;
+      color: #6b5b4d;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* 縦向き・小画面タブレット対応 */
+    @media (max-width: 900px) {
+      #screen-select {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .intro-sidebar {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 3px solid #d5e6be;
+        padding: 14px 16px;
+      }
+      .cover-image-wrap {
+        max-width: 180px;
+        min-height: 120px;
+      }
+      .intro-guide-card {
+        flex: 1;
+      }
+      .school-select-main {
+        height: auto;
+        overflow: visible;
+      }
+      .school-scroll-area {
+        overflow: visible;
+      }
+    }
+
+    /* =========================================================
+       ② 地図プレビュー画面（画面全体表示 + 3つの操作ボタンのみ）
+       ========================================================= */
+    #screen-preview {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #faf7ee;
+      background-image:
+        radial-gradient(#ede6d6 1.2px, transparent 1.2px),
+        linear-gradient(135deg, #fdfbf7 0%, #f6f1e5 100%);
+      background-size: 24px 24px, 100% 100%;
+      overflow: hidden;
+    }
+
+    /* A3横プレビュー枠（pdf-previewと同じ構成で画面いっぱいに拡大表示） */
+    .preview-wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .page-frame {
+      position: relative;
+      width: 420mm;
+      height: 297mm;
+      background: white;
+      padding: 5mm;
+      border: 1px solid #ede7db;
+      box-shadow: 0 16px 40px rgba(180, 160, 130, 0.28), 0 2px 8px rgba(0,0,0,0.06);
+      box-sizing: border-box;
+      flex-shrink: 0;
+      transform-origin: center center;
+    }
+
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #e2e8f0;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .maplibregl-ctrl-top-right {
+      display: none !important;
+    }
+
+    /* 地図上のオーバーレイ（pdf-preview.htmlと同様） */
+    .overlay-title {
+      position: absolute;
+      top: 3mm;
+      left: 3mm;
+      z-index: 10;
+      width: 10cm;
+      pointer-events: none;
+      filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.35));
+    }
+    .overlay-title img {
+      width: 10cm;
+      height: auto;
+      display: block;
+    }
+
+    .overlay-top-right {
+      position: absolute;
+      top: 3mm;
+      right: 3mm;
+      z-index: 10;
+      pointer-events: none;
+    }
+    .compass-container {
+      width: 64px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+    .compass-needle {
+      width: 52px;
+      height: 52px;
+    }
+
+    .overlay-bottom-right {
+      position: absolute;
+      bottom: 2mm;
+      right: 3mm;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+      pointer-events: none;
+    }
+    .legend-top-row {
+      width: 6cm;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1.5mm;
+    }
+    .legend-title-badge {
+      font-size: 8pt;
+      font-weight: bold;
+      color: #111111;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2px 3mm;
+      border-radius: 2px;
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.15);
+      line-height: 1.2;
+    }
+    .overlay-map-qr {
+      width: 2cm;
+      height: 2cm;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 1.5mm;
+      box-sizing: border-box;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+    }
+    .overlay-map-qr-code {
+      width: 15mm !important;
+      height: 15mm !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay-map-qr-code canvas,
+    .overlay-map-qr-code img {
+      width: 15mm !important;
+      height: 15mm !important;
+      display: block;
+    }
+    .overlay-map-qr-label {
+      font-size: 5pt;
+      color: #334155;
+      font-weight: bold;
+      line-height: 1;
+      margin-top: 1mm;
+      text-align: center;
+    }
+    .legend-image {
+      width: 6cm;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0px 2px 5px rgba(0, 0, 0, 0.3));
+    }
+    .notice-box {
+      width: 6cm;
+      background: #ffffff;
+      border: 1px solid #cccccc;
+      padding: 4px 6px;
+      box-sizing: border-box;
+      font-size: 6pt;
+      line-height: 1.3;
+      color: #111111;
+      border-radius: 2px;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+      white-space: pre-wrap;
+    }
+    .credit-box {
+      width: 6cm;
+      box-sizing: border-box;
+      font-size: 3.2pt;
+      line-height: 1.35;
+      color: #333333;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1.5px 4px;
+      border-radius: 2px;
+      margin-top: 1px;
+      text-align: right;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+      white-space: nowrap;
+    }
+    .page-disclaimer {
+      position: absolute;
+      bottom: 1.2mm;
+      right: 8mm;
+      font-size: 6pt;
+      color: #333333;
+      line-height: 1;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* ②画面上部の案内バッジ（操作ではなく現在選択中の学校名とヒントを表示） */
+    .preview-top-banner {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 150;
+      background: rgba(255, 255, 255, 0.96);
+      border: 3px solid #3e7d34;
+      border-radius: 999px;
+      padding: 10px 26px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .preview-school-label {
+      font-size: 20px;
+      font-weight: 900;
+      color: #2e6924;
+    }
+
+    .preview-hint-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #5c4328;
+      background: #fff5e6;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1.5px solid #f5cba7;
+    }
+
+    /* ②画面下部の大きな操作パネル（3つの操作のみ！） */
+    .preview-controls-dock {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 150;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 18px;
+      max-width: calc(100vw - 24px);
+      flex-wrap: wrap;
+    }
+
+    /* 共通：大きくて押しやすい影付き3Dボタン */
+    .big-action-btn {
+      appearance: none;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 22px;
+      padding: 14px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+    }
+
+    /* 1. タイトルに戻るボタン */
+    .btn-back-title {
+      background: #ffffff;
+      color: #4a3525;
+      border: 3px solid #8c7a6b;
+      box-shadow: 0 7px 0 #6e5d4f, 0 12px 24px rgba(0, 0, 0, 0.28);
+    }
+    .btn-back-title:hover {
+      background: #fdf8f2;
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 #6e5d4f, 0 14px 28px rgba(0, 0, 0, 0.32);
+    }
+    .btn-back-title:active {
+      transform: translateY(5px);
+      box-shadow: 0 2px 0 #6e5d4f, 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-icon-circle {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .btn-back-title .btn-icon-circle {
+      background: #f3ece4;
+    }
+
+    .btn-label-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+      line-height: 1.2;
+    }
+
+    .btn-main-text {
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .btn-sub-text {
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0.85;
+      margin-top: 3px;
+    }
+
+    /* 2. 地図の大きさ（広域15.5 / 標準16.0 / ズーム17.0）ダイレクト選択パネル */
+    .zoom-selector-box {
+      background: rgba(255, 255, 255, 0.97);
+      border: 3px solid #3b82f6;
+      border-radius: 24px;
+      padding: 10px 14px;
+      box-shadow: 0 7px 0 #1d4ed8, 0 12px 24px rgba(0, 0, 0, 0.28);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .zoom-box-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #1e40af;
+      padding: 0 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.25;
+      text-align: center;
+    }
+
+    .zoom-preset-btn {
+      appearance: none;
+      font-family: inherit;
+      cursor: pointer;
+      background: #f1f5f9;
+      color: #334155;
+      border: 2.5px solid #94a3b8;
+      border-radius: 16px;
+      padding: 10px 18px;
+      min-width: 118px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: 0 5px 0 #94a3b8, 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.12s ease;
+    }
+
+    .zoom-preset-btn:hover {
+      background: #e2e8f0;
+      transform: translateY(-1px);
+    }
+
+    .zoom-preset-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 #94a3b8;
+    }
+
+    .zoom-preset-btn.active {
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      border-color: #1e3a8a;
+      box-shadow: 0 5px 0 #1e3a8a, 0 6px 14px rgba(37, 99, 235, 0.35);
+    }
+
+    .zoom-preset-main {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+
+    .zoom-preset-sub {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    /* 3. ここのQRコードを表示ボタン */
+    .btn-show-qr {
+      background: linear-gradient(180deg, #ff9924 0%, #ea6d00 100%);
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      box-shadow: 0 7px 0 #b85300, 0 12px 28px rgba(234, 109, 0, 0.45);
+    }
+    .btn-show-qr:hover {
+      background: linear-gradient(180deg, #ffa73d 0%, #f57605 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 #b85300, 0 16px 32px rgba(234, 109, 0, 0.55);
+    }
+    .btn-show-qr:active {
+      transform: translateY(5px);
+      box-shadow: 0 2px 0 #b85300, 0 4px 10px rgba(234, 109, 0, 0.35);
+    }
+
+    .btn-show-qr .btn-icon-circle {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* =========================================================
+       ③ QRコード ポップアップ画面（戻る→②、タイトルへ→①のみ）
+       ========================================================= */
+    #screen-qr-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(30, 22, 15, 0.72);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+
+    #screen-qr-modal.hidden {
+      display: none !important;
+    }
+
+    .qr-popup-card {
+      background: #fffdf7;
+      border: 5px solid #f2851d;
+      border-radius: 32px;
+      max-width: 640px;
+      width: 100%;
+      padding: 28px 32px 30px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.92);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .qr-popup-badge {
+      background: #fff0de;
+      color: #d96400;
+      border: 2px solid #f8b878;
+      font-size: 16px;
+      font-weight: 900;
+      padding: 6px 18px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+    }
+
+    .qr-popup-title {
+      font-size: 28px;
+      font-weight: 900;
+      color: #2e6924;
+      margin: 0 0 8px 0;
+      line-height: 1.3;
+    }
+
+    .qr-popup-desc {
+      font-size: 16px;
+      font-weight: 700;
+      color: #5c4328;
+      margin: 0 0 18px 0;
+      line-height: 1.5;
+    }
+
+    .qr-code-frame {
+      background: #ffffff;
+      border: 4px solid #8ec360;
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(62, 125, 52, 0.18);
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #popup-qr-container {
+      width: 260px;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #popup-qr-container canvas,
+    #popup-qr-container img {
+      width: 260px !important;
+      height: 260px !important;
+      display: block;
+    }
+
+    .qr-school-caption {
+      font-size: 15px;
+      font-weight: 800;
+      color: #3e7d34;
+      background: #f2f9eb;
+      padding: 4px 14px;
+      border-radius: 999px;
+    }
+
+    .qr-popup-actions {
+      display: flex;
+      gap: 18px;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .qr-popup-actions .big-action-btn {
+      flex: 1;
+      min-width: 230px;
+      padding: 16px 20px;
+    }
+
+    .btn-return-map {
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      border: 3px solid #1e40af;
+      box-shadow: 0 7px 0 #1e3a8a, 0 10px 20px rgba(37, 99, 235, 0.3);
+    }
+    .btn-return-map:hover {
+      background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 9px 0 #1e3a8a, 0 14px 24px rgba(37, 99, 235, 0.38);
+    }
+    .btn-return-map:active {
+      transform: translateY(5px);
+      box-shadow: 0 2px 0 #1e3a8a;
+    }
+    .btn-return-map .btn-icon-circle {
+      background: rgba(255, 255, 255, 0.22);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =========================================================
+       ① タイトル ＆ 最寄りの一時避難場所（小中学校）選択画面
+       ========================================================= -->
+  <div id="screen-select">
+    <aside class="intro-sidebar">
+      <div class="cover-image-wrap">
+        <img src="./img/小平市タウンマップ表紙.png" alt="小平市防災タウンマップ 表紙" />
+      </div>
+
+      <div class="intro-guide-card">
+        <h2 class="intro-guide-title">✨ じぶんの家の防災マップをつくろう！</h2>
+        <ul class="intro-steps">
+          <li class="intro-step-item">
+            <span class="step-num">1</span>
+            <span>おうちの近くの<strong>学校（避難場所）</strong>をえらんでタッチ！</span>
+          </li>
+          <li class="intro-step-item">
+            <span class="step-num">2</span>
+            <span>地図をうごかしたり、<strong>大きさ</strong>をえらぼう！</span>
+          </li>
+          <li class="intro-step-item">
+            <span class="step-num">3</span>
+            <span><strong>QRコード</strong>をスマホでよみとって地図をゲット！</span>
+          </li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="school-select-main">
+      <header class="select-header">
+        <div class="select-header-text">
+          <h1>🏫 いちばん近い「いっとき避難場所（小・中学校）」をえらんでね！</h1>
+          <p>タッチすると、その学校をまんなかにした防災マップが開きます</p>
+        </div>
+        <div class="filter-tabs">
+          <button type="button" class="filter-tab-btn active" id="tab-all" onclick="filterSchools('all')">
+            🌟 ぜんぶ (27校)
+          </button>
+          <button type="button" class="filter-tab-btn" id="tab-elem" onclick="filterSchools('elem')">
+            🏫 小学校 (19校)
+          </button>
+          <button type="button" class="filter-tab-btn" id="tab-jr" onclick="filterSchools('jr')">
+            🎒 中学校 (8校)
+          </button>
+        </div>
+      </header>
+
+      <div class="school-scroll-area" id="school-scroll-area">
+        <!-- 小学校一覧 -->
+        <section class="category-section" id="section-elem">
+          <h2 class="category-title elem">🏫 小平市立 小学校（19校）</h2>
+          <div class="school-grid" id="grid-elem"></div>
+        </section>
+
+        <!-- 中学校一覧 -->
+        <section class="category-section" id="section-jr">
+          <h2 class="category-title jr">🎒 小平市立 中学校（8校）</h2>
+          <div class="school-grid" id="grid-jr"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- =========================================================
+       ② 地図プレビュー画面（画面全体表示 + 限定された3つの操作）
+       ========================================================= -->
+  <div id="screen-preview">
+    <!-- 上部：現在選択中の学校名と操作ヒント -->
+    <div class="preview-top-banner">
+      <span class="preview-school-label" id="current-school-label">📍 小平第一小学校 のまわり</span>
+      <span class="preview-hint-label">👆 地図をドラッグして動かしたり、指でひろげたりできます</span>
+    </div>
+
+    <!-- 画面全体プレビュー枠 -->
+    <div class="preview-wrapper" id="preview-wrapper">
+      <div class="page-frame" id="page-frame">
+        <div class="map-container">
+          <div id="map"></div>
+
+          <div class="overlay-title">
+            <img id="title-img" src="./img/title.png" alt="小平市防災タウンマップ" crossorigin="anonymous" />
+          </div>
+
+          <div class="overlay-top-right">
+            <div class="compass-container">
+              <svg class="compass-needle" id="compass-needle" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="46" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+                <polygon points="50,22 62,56 50,48 38,56" fill="#dc2626" />
+                <polygon points="50,88 62,56 50,48 38,56" fill="#94a3b8" />
+                <circle cx="50" cy="56" r="6" fill="#1e293b" />
+                <text x="50" y="16" font-size="16" font-weight="900" fill="#dc2626" text-anchor="middle" font-family="Arial, sans-serif">N</text>
+              </svg>
+            </div>
+          </div>
+
+          <div class="overlay-bottom-right">
+            <div class="legend-top-row">
+              <span class="legend-title-badge">凡例</span>
+              <div class="overlay-map-qr" id="overlay-map-qr">
+                <div id="map-qr-code" class="overlay-map-qr-code"></div>
+                <div class="overlay-map-qr-label">スマホ地図</div>
+              </div>
+            </div>
+            <img id="legend-img" class="legend-image" src="./img/legend.png" alt="凡例" crossorigin="anonymous" />
+            <div class="notice-box">※災害対策用井戸
+　災害時に限り、井戸所有者のご協力により生活用水としての井戸水を近隣の方々へ提供していただけるもの。
+詳しくは小平市のホームページをご確認ください。</div>
+            <div class="credit-box">
+              <div>©OpenStreetMap contributors (ODbL)  ; MapLibre ; 地図作製：高橋克典(こだいらSVCS)</div>
+              <div>参考・出典：小平市防災マップ ; 東京消防庁オープンデータ ; 国土交通省位置参照情報ダウンロードサービス</div>
+              <div>NPO法人小平井戸の会様の情報も参考にさせていただきました</div>
+            </div>
+          </div>
+        </div>
+        <div class="page-disclaimer">本マップは2026年9月時点の情報をもとに高橋克典(こだいらSVCs)が自主作成したものです。避難所や設備の最新情報・正確な運用状況については小平市・東京消防庁・国土交通省等各種公式情報をご確認ください。</div>
+      </div>
+    </div>
+
+    <!-- 下部：3つの操作のみ（①タイトルへ戻る / ②地図の大きさ3段階 / ③QRコードを表示） -->
+    <div class="preview-controls-dock">
+      <!-- 操作1：タイトルに戻る（①へ） -->
+      <button type="button" class="big-action-btn btn-back-title" onclick="goToTitleScreen()">
+        <span class="btn-icon-circle">🏠</span>
+        <span class="btn-label-group">
+          <span class="btn-main-text">さいしょにもどる</span>
+          <span class="btn-sub-text">ちがう学校をえらぶ</span>
+        </span>
+      </button>
+
+      <!-- 操作2：地図の大きさをダイレクト選択（A:広域=15.5, B:標準=16.0, C:ズーム=17.0） -->
+      <div class="zoom-selector-box" role="group" aria-label="地図の大きさ">
+        <div class="zoom-box-title">
+          <span>🔍 地図の</span>
+          <span>大きさ</span>
+        </div>
+        <button type="button" class="zoom-preset-btn" id="zoom-btn-wide" onclick="selectZoomPreset(15.5, 'wide')">
+          <span class="zoom-preset-main">ひろく見る</span>
+          <span class="zoom-preset-sub">まわり全体</span>
+        </button>
+        <button type="button" class="zoom-preset-btn active" id="zoom-btn-normal" onclick="selectZoomPreset(16.0, 'normal')">
+          <span class="zoom-preset-main">ふつう</span>
+          <span class="zoom-preset-sub">おすすめ</span>
+        </button>
+        <button type="button" class="zoom-preset-btn" id="zoom-btn-close" onclick="selectZoomPreset(17.0, 'close')">
+          <span class="zoom-preset-main">大きく見る</span>
+          <span class="zoom-preset-sub">くわしく</span>
+        </button>
+      </div>
+
+      <!-- 操作3：ここのQRコードを表示（③へ） -->
+      <button type="button" class="big-action-btn btn-show-qr" onclick="openQRModal()">
+        <span class="btn-icon-circle">📱</span>
+        <span class="btn-label-group">
+          <span class="btn-main-text">QRコードを出す</span>
+          <span class="btn-sub-text">スマホにこの地図をとる</span>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       ③ QRコード ポップアップ画面（操作は「地図にもどる→②」「さいしょにもどる→①」のみ）
+       ========================================================= -->
+  <div id="screen-qr-modal" class="hidden">
+    <div class="qr-popup-card">
+      <div class="qr-popup-badge">📱 スマホでダウンロード</div>
+      <h2 class="qr-popup-title">スマホのカメラでよみとってね！</h2>
+      <p class="qr-popup-desc">
+        いま見ている場所の<strong>「小平市防災タウンマップ（PDF）」</strong>を<br />
+        あなたのスマートフォンにそのまま保存できます。
+      </p>
+
+      <div class="qr-code-frame">
+        <div id="popup-qr-container"></div>
+        <div class="qr-school-caption" id="qr-school-caption">📍 小平第一小学校 のまわり</div>
+      </div>
+
+      <div class="qr-popup-actions">
+        <!-- 戻る → ②へ -->
+        <button type="button" class="big-action-btn btn-return-map" onclick="closeQRModalToPreview()">
+          <span class="btn-icon-circle">◀</span>
+          <span class="btn-label-group">
+            <span class="btn-main-text">地図にもどる</span>
+            <span class="btn-sub-text">場所や大きさをなおす</span>
+          </span>
+        </button>
+
+        <!-- タイトルへ → ①へ -->
+        <button type="button" class="big-action-btn btn-back-title" onclick="goToTitleScreen()">
+          <span class="btn-icon-circle">🏠</span>
+          <span class="btn-label-group">
+            <span class="btn-main-text">さいしょにもどる</span>
+            <span class="btn-sub-text">タイトル画面へ</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // 小平市立 小・中学校（一時避難場所・指定避難所）データ
+    // =========================================================
+    const ELEMENTARY_SCHOOLS = [
+      { badge: '一小',   name: '小平第一小学校',   town: '小川町一丁目',     lat: 35.72884, lng: 139.46287 },
+      { badge: '二小',   name: '小平第二小学校',   town: '仲町',             lat: 35.72735, lng: 139.49130 },
+      { badge: '三小',   name: '小平第三小学校',   town: '回田町',           lat: 35.71492, lng: 139.49219 },
+      { badge: '四小',   name: '小平第四小学校',   town: '学園西町一丁目',   lat: 35.71979, lng: 139.47172 },
+      { badge: '五小',   name: '小平第五小学校',   town: '花小金井六丁目',   lat: 35.72794, lng: 139.51034 },
+      { badge: '六小',   name: '小平第六小学校',   town: '小川東町三丁目',   lat: 35.73500, lng: 139.46644 },
+      { badge: '七小',   name: '小平第七小学校',   town: '大沼町一丁目',     lat: 35.73606, lng: 139.49535 },
+      { badge: '八小',   name: '小平第八小学校',   town: '鈴木町一丁目',     lat: 35.72001, lng: 139.50173 },
+      { badge: '九小',   name: '小平第九小学校',   town: '鈴木町一丁目',     lat: 35.72441, lng: 139.49406 },
+      { badge: '十小',   name: '小平第十小学校',   town: '上水本町四丁目',   lat: 35.71636, lng: 139.47348 },
+      { badge: '十一小', name: '小平第十一小学校', town: '花小金井四丁目',   lat: 35.73747, lng: 139.50954 },
+      { badge: '十二小', name: '小平第十二小学校', town: '小川町一丁目',     lat: 35.72879, lng: 139.44379 },
+      { badge: '十三小', name: '小平第十三小学校', town: '小川西町一丁目',   lat: 35.73589, lng: 139.45362 },
+      { badge: '十四小', name: '小平第十四小学校', town: '仲町',             lat: 35.73377, lng: 139.48105 },
+      { badge: '十五小', name: '小平第十五小学校', town: '小川町二丁目',     lat: 35.72670, lng: 139.46663 },
+      { badge: '花小',   name: '花小金井小学校',   town: '花小金井一丁目',   lat: 35.72632, lng: 139.51859 },
+      { badge: '学園東', name: '学園東小学校',     town: '学園東町二丁目',   lat: 35.72585, lng: 139.48474 },
+      { badge: '鈴木小', name: '鈴木小学校',       town: '鈴木町一丁目',     lat: 35.71871, lng: 139.49758 },
+      { badge: '上宿小', name: '上宿小学校',       town: '小川町一丁目',     lat: 35.73100, lng: 139.44152 }
+    ];
+
+    const JUNIOR_HIGH_SCHOOLS = [
+      { badge: '一中',   name: '小平第一中学校',   town: '仲町',             lat: 35.72852, lng: 139.48546 },
+      { badge: '二中',   name: '小平第二中学校',   town: '小川東町一丁目',   lat: 35.73579, lng: 139.46418 },
+      { badge: '三中',   name: '小平第三中学校',   town: '鈴木町一丁目',     lat: 35.72585, lng: 139.50199 },
+      { badge: '四中',   name: '小平第四中学校',   town: '学園西町一丁目',   lat: 35.71803, lng: 139.47825 },
+      { badge: '五中',   name: '小平第五中学校',   town: '小川町一丁目',     lat: 35.72635, lng: 139.45157 },
+      { badge: '六中',   name: '小平第六中学校',   town: '大沼町六丁目',     lat: 35.73370, lng: 139.50067 },
+      { badge: '花南中', name: '花小金井南中学校', town: '花小金井南町一丁目', lat: 35.72131, lng: 139.51176 },
+      { badge: '上水中', name: '上水中学校',       town: '上水南町一丁目',   lat: 35.71431, lng: 139.48166 }
+    ];
+
+    let selectedSchoolName = '小平第一小学校';
+
+    // 学校選択ボタンを生成
+    function renderSchoolButtons() {
+      const elemGrid = document.getElementById('grid-elem');
+      const jrGrid = document.getElementById('grid-jr');
+
+      elemGrid.innerHTML = ELEMENTARY_SCHOOLS.map((s) => `
+        <button type="button" class="school-btn elem-btn" onclick="selectSchool('${s.name}', ${s.lat}, ${s.lng})">
+          <div class="school-badge">${s.badge}</div>
+          <div class="school-info">
+            <div class="school-name">${s.name}</div>
+            <div class="school-town">📍 ${s.town}</div>
+          </div>
+        </button>
+      `).join('');
+
+      jrGrid.innerHTML = JUNIOR_HIGH_SCHOOLS.map((s) => `
+        <button type="button" class="school-btn jr-btn" onclick="selectSchool('${s.name}', ${s.lat}, ${s.lng})">
+          <div class="school-badge">${s.badge}</div>
+          <div class="school-info">
+            <div class="school-name">${s.name}</div>
+            <div class="school-town">📍 ${s.town}</div>
+          </div>
+        </button>
+      `).join('');
+    }
+
+    // 小学校・中学校の絞り込みタブ切り替え
+    function filterSchools(mode) {
+      document.getElementById('tab-all').classList.toggle('active', mode === 'all');
+      document.getElementById('tab-elem').classList.toggle('active', mode === 'elem');
+      document.getElementById('tab-jr').classList.toggle('active', mode === 'jr');
+
+      document.getElementById('section-elem').style.display = (mode === 'all' || mode === 'elem') ? 'block' : 'none';
+      document.getElementById('section-jr').style.display = (mode === 'all' || mode === 'jr') ? 'block' : 'none';
+      document.getElementById('school-scroll-area').scrollTop = 0;
+    }
+
+    renderSchoolButtons();
+
+    // =========================================================
+    // MapLibre GL 地図初期化（方位・傾き固定、スクロール＆ピンチズーム許可）
+    // =========================================================
+    const map = new maplibregl.Map({
+      container: 'map',
+      preserveDrawingBuffer: true,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      keyboard: false,
+      minZoom: 13,
+      maxZoom: 18.5,
+      bearing: 0,
+      pitch: 0,
+      style: {
+        version: 8,
+        sources: {
+          'custom-tiles': {
+            type: 'raster',
+            tiles: ['./tiles/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            minzoom: 13,
+            maxzoom: 18,
+            attribution: 'MapData : OpenStreetMap'
+          }
+        },
+        layers: [
+          {
+            id: 'custom-tiles-layer',
+            type: 'raster',
+            source: 'custom-tiles',
+            minzoom: 13
+          }
+        ]
+      },
+      center: [139.46287, 35.72884],
+      zoom: 16.0
+    });
+
+    // 2本指ピンチでの回転のみ無効化（ピンチによるズーム操作は有効のままにする）
+    map.touchZoomRotate.disableRotation();
+
+    // 左下スケール表示
+    map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+
+    // 万が一回転や傾きが発生しても常に北向き・傾き0に保つ
+    map.on('rotate', () => {
+      if (map.getBearing() !== 0) map.setBearing(0);
+    });
+    map.on('pitch', () => {
+      if (map.getPitch() !== 0) map.setPitch(0);
+    });
+
+    // 画面全体にプレビュー（A3枠）をフィットさせる
+    function fitPreviewToWindow() {
+      const wrapper = document.getElementById('preview-wrapper');
+      const frame = document.getElementById('page-frame');
+      if (!wrapper || !frame) return;
+
+      const padding = 12;
+      const availableWidth = wrapper.clientWidth - padding;
+      const availableHeight = wrapper.clientHeight - padding;
+
+      const frameWidthPx = 420 * 3.779527559;
+      const frameHeightPx = 297 * 3.779527559;
+
+      const scaleX = availableWidth / frameWidthPx;
+      const scaleY = availableHeight / frameHeightPx;
+      const scale = Math.min(scaleX, scaleY);
+
+      frame.style.transform = `scale(${scale})`;
+      map.resize();
+    }
+
+    window.addEventListener('resize', fitPreviewToWindow);
+    map.on('load', fitPreviewToWindow);
+    setTimeout(fitPreviewToWindow, 100);
+
+    // =========================================================
+    // 画面遷移と3つの操作ロジック
+    // =========================================================
+
+    // ①で避難場所を選択 → ②プレビュー画面へ
+    function selectSchool(name, lat, lng) {
+      selectedSchoolName = name;
+      document.getElementById('current-school-label').textContent = `📍 ${name} のまわり`;
+      document.getElementById('qr-school-caption').textContent = `📍 ${name} のまわりのマップ`;
+
+      // ①を隠して②を表示
+      document.getElementById('screen-select').classList.add('hidden');
+      document.getElementById('screen-qr-modal').classList.add('hidden');
+
+      fitPreviewToWindow();
+
+      // 選択した避難場所を中心に、B：標準（16.0）で表示
+      map.jumpTo({
+        center: [lng, lat],
+        zoom: 16.0,
+        bearing: 0,
+        pitch: 0
+      });
+      setActiveZoomButton('normal');
+      updateMapOverlayQR();
+    }
+
+    // ②の操作1 / ③の操作：タイトル画面（①）に戻る
+    function goToTitleScreen() {
+      document.getElementById('screen-qr-modal').classList.add('hidden');
+      document.getElementById('screen-select').classList.remove('hidden');
+    }
+
+    // ②の操作2：3段階の地図の大きさ（A:15.5 / B:16.0 / C:17.0）をダイレクト選択
+    function selectZoomPreset(targetZoom, presetKey) {
+      setActiveZoomButton(presetKey);
+      map.easeTo({
+        zoom: targetZoom,
+        bearing: 0,
+        pitch: 0,
+        duration: 350
+      });
+    }
+
+    function setActiveZoomButton(activeKey) {
+      document.getElementById('zoom-btn-wide').classList.toggle('active', activeKey === 'wide');
+      document.getElementById('zoom-btn-normal').classList.toggle('active', activeKey === 'normal');
+      document.getElementById('zoom-btn-close').classList.toggle('active', activeKey === 'close');
+    }
+
+    // ピンチ操作やホイールでズームが変更された際、3段階のどれかに近ければハイライト同期
+    map.on('zoomend', () => {
+      const z = map.getZoom();
+      if (Math.abs(z - 15.5) < 0.08) {
+        setActiveZoomButton('wide');
+      } else if (Math.abs(z - 16.0) < 0.08) {
+        setActiveZoomButton('normal');
+      } else if (Math.abs(z - 17.0) < 0.08) {
+        setActiveZoomButton('close');
+      } else {
+        setActiveZoomButton(null);
+      }
+    });
+
+    // イベント用のスマホ地図ダウンロードURL（event-download.html）を生成
+    function getDynamicDownloadUrl() {
+      const center = map.getCenter();
+      const zoom = map.getZoom().toFixed(2);
+      const lat = center.lat.toFixed(5);
+      const lng = center.lng.toFixed(5);
+
+      const downloadUrl = new URL('event-download.html', window.location.href);
+      downloadUrl.searchParams.set('lat', lat);
+      downloadUrl.searchParams.set('lng', lng);
+      downloadUrl.searchParams.set('zoom', zoom);
+      downloadUrl.searchParams.set('bearing', '0.0');
+      downloadUrl.searchParams.set('pitch', '0.0');
+      downloadUrl.searchParams.set('qr', '1');
+      return downloadUrl.href;
+    }
+
+    let popupQRCode = null;
+    let mapOverlayQRCode = null;
+    let mapQrTimer = null;
+
+    // 地図右下の凡例上に乗せるQRコードをイベント用ダウンロードURLで更新
+    function updateMapOverlayQR() {
+      clearTimeout(mapQrTimer);
+      mapQrTimer = setTimeout(() => {
+        const url = getDynamicDownloadUrl();
+        const mapQREl = document.getElementById('map-qr-code');
+        if (!mapQREl) return;
+
+        if (!mapOverlayQRCode) {
+          mapQREl.innerHTML = '';
+          mapOverlayQRCode = new QRCode(mapQREl, {
+            text: url,
+            width: 360,
+            height: 360,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } else {
+          mapOverlayQRCode.makeCode(url);
+        }
+      }, 150);
+    }
+
+    map.on('moveend', updateMapOverlayQR);
+    map.on('load', updateMapOverlayQR);
+
+    // ②の操作3：ここのQRコードを表示（③ポップアップへ）
+    function openQRModal() {
+      const url = getDynamicDownloadUrl();
+      const container = document.getElementById('popup-qr-container');
+
+      if (!popupQRCode) {
+        container.innerHTML = '';
+        popupQRCode = new QRCode(container, {
+          text: url,
+          width: 260,
+          height: 260,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        popupQRCode.makeCode(url);
+      }
+
+      document.getElementById('screen-qr-modal').classList.remove('hidden');
+    }
+
+    // ③の操作：戻る（②プレビューへ戻る）
+    function closeQRModalToPreview() {
+      document.getElementById('screen-qr-modal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
