@@ -18,6 +18,7 @@
 
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       background:
         radial-gradient(#e9e2ce 1.5px, transparent 1.5px),
         linear-gradient(180deg, #e7f4d3 0%, #fffdf6 50%, #f5f9ec 100%);
@@ -28,17 +29,17 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 18px;
+      padding: 10px 12px;
     }
 
     .card {
       background: #fffdf8;
-      border: 4px solid #8ec360;
-      border-radius: 28px;
+      border: 3.5px solid #8ec360;
+      border-radius: 24px;
       width: 100%;
-      max-width: 440px;
-      padding: 24px 22px 26px;
-      box-shadow: 0 16px 40px rgba(102, 66, 29, 0.16), 0 4px 10px rgba(0, 0, 0, 0.05);
+      max-width: 420px;
+      padding: 14px 16px 16px;
+      box-shadow: 0 12px 32px rgba(102, 66, 29, 0.15), 0 4px 10px rgba(0, 0, 0, 0.05);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -46,30 +47,33 @@
     }
 
     .cover-thumb {
-      width: 150px;
+      width: 100px;
+      max-height: 138px;
+      object-fit: contain;
       height: auto;
-      border-radius: 16px;
-      border: 3px solid #ffffff;
-      box-shadow: 0 6px 18px rgba(102, 66, 29, 0.18);
-      margin-bottom: 14px;
+      border-radius: 12px;
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 4px 14px rgba(102, 66, 29, 0.16);
+      margin-bottom: 8px;
       display: block;
     }
 
     h1 {
-      font-size: 22px;
+      font-size: clamp(17px, 5vw, 21px);
       font-weight: 900;
       color: #2e6924;
-      line-height: 1.3;
-      margin-bottom: 16px;
+      line-height: 1.25;
+      margin-bottom: 10px;
+      white-space: nowrap;
     }
 
     .status-container {
       width: 100%;
       background: #fff9f0;
-      border: 3px solid #f4a456;
-      border-radius: 22px;
-      padding: 22px 16px;
-      margin-bottom: 20px;
+      border: 2.5px solid #f4a456;
+      border-radius: 18px;
+      padding: 12px 12px;
+      margin-bottom: 12px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -77,13 +81,13 @@
     }
 
     .spinner {
-      width: 56px;
-      height: 56px;
-      border: 6px solid #fde3c8;
+      width: 42px;
+      height: 42px;
+      border: 5px solid #fde3c8;
       border-top-color: #f2851d;
       border-radius: 50%;
       animation: spin 0.9s linear infinite;
-      margin-bottom: 14px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -97,7 +101,7 @@
 
     .spinner.done::after {
       content: '🎉';
-      font-size: 28px;
+      font-size: 22px;
       line-height: 1;
     }
 
@@ -109,7 +113,7 @@
 
     .spinner.error::after {
       content: '😢';
-      font-size: 28px;
+      font-size: 22px;
       line-height: 1;
     }
 
@@ -118,26 +122,27 @@
     }
 
     .status-text {
-      font-size: 19px;
+      font-size: clamp(15px, 4.4vw, 18px);
       font-weight: 900;
       color: #3d2b1f;
-      margin-bottom: 6px;
-      line-height: 1.35;
+      margin-bottom: 4px;
+      line-height: 1.3;
+      white-space: nowrap;
     }
 
     .status-desc {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       color: #6b5344;
-      line-height: 1.45;
+      line-height: 1.35;
     }
 
     .progress-bar-container {
       width: 100%;
-      height: 14px;
+      height: 10px;
       background: #f1e6d6;
       border-radius: 999px;
-      margin-top: 16px;
+      margin-top: 10px;
       overflow: hidden;
       padding: 2px;
     }
@@ -154,50 +159,51 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
     }
 
     /* 大きくて押しやすい影付き3Dボタン */
     .btn {
       appearance: none;
       width: 100%;
-      padding: 16px 18px;
-      border-radius: 20px;
+      padding: 12px 14px;
+      border-radius: 16px;
       font-family: inherit;
-      font-size: 18px;
+      font-size: clamp(15px, 4.4vw, 17px);
       font-weight: 900;
       cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
+      white-space: nowrap;
       transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
     }
 
     .btn-primary {
       background: linear-gradient(180deg, #ff9924 0%, #ea6d00 100%);
       color: #ffffff;
-      border: 3px solid #ffffff;
-      box-shadow: 0 6px 0 #b85300, 0 10px 22px rgba(234, 109, 0, 0.38);
+      border: 2.5px solid #ffffff;
+      box-shadow: 0 5px 0 #b85300, 0 8px 18px rgba(234, 109, 0, 0.35);
     }
 
     .btn-primary:hover {
       background: linear-gradient(180deg, #ffa73d 0%, #f57605 100%);
       transform: translateY(-2px);
-      box-shadow: 0 8px 0 #b85300, 0 12px 26px rgba(234, 109, 0, 0.45);
+      box-shadow: 0 7px 0 #b85300, 0 10px 22px rgba(234, 109, 0, 0.45);
     }
 
     .btn-primary:active {
-      transform: translateY(4px);
+      transform: translateY(3px);
       box-shadow: 0 2px 0 #b85300;
     }
 
     .btn-secondary {
       background: #ffffff;
       color: #4a3525;
-      border: 3px solid #8c7a6b;
-      box-shadow: 0 6px 0 #6e5d4f, 0 8px 16px rgba(0, 0, 0, 0.12);
+      border: 2.5px solid #8c7a6b;
+      box-shadow: 0 5px 0 #6e5d4f, 0 6px 14px rgba(0, 0, 0, 0.1);
     }
 
     .btn-secondary:hover {
@@ -206,20 +212,20 @@
     }
 
     .btn-secondary:active {
-      transform: translateY(4px);
+      transform: translateY(3px);
       box-shadow: 0 2px 0 #6e5d4f;
     }
 
     .friendly-note {
-      margin-top: 18px;
-      font-size: 13px;
+      margin-top: 10px;
+      font-size: 12px;
       font-weight: 700;
       color: #6b5344;
       background: #f2f9eb;
       border: 1.5px solid #c5e0a8;
-      border-radius: 12px;
-      padding: 8px 12px;
-      line-height: 1.4;
+      border-radius: 10px;
+      padding: 6px 10px;
+      line-height: 1.35;
       width: 100%;
     }
 
@@ -311,6 +317,7 @@
     const statusText = document.getElementById('status-text');
     const statusDesc = document.getElementById('status-desc');
     const progressBar = document.getElementById('progress-bar');
+    const progressWrap = document.getElementById('progress-wrap');
     const downloadLink = document.getElementById('download-link');
 
     function updateStatus(text, desc, progress, state = 'running') {
@@ -322,8 +329,10 @@
       if (progressBar) progressBar.style.width = `${progress}%`;
       if (state === 'done') {
         spinner.className = 'spinner done';
+        if (progressWrap) progressWrap.style.display = 'none';
       } else if (state === 'error') {
         spinner.className = 'spinner error';
+        if (progressWrap) progressWrap.style.display = 'none';
       }
     }
 
